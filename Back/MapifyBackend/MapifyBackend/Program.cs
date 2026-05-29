@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 4. Middleware
+// Middleware
 app.UseCors("AllowAll");
 app.MapControllers(); // Connects URL with controllers
 

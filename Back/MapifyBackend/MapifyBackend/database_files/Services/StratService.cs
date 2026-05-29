@@ -2,31 +2,31 @@
 
 public class StratService
 {
-    public DatabaseService DbService;
+    private DatabaseService _dbService;
 
     public StratService(DatabaseService databaseService)
     {
-        DbService = databaseService;
+        _dbService = databaseService;
     }
     
     public void CreateStrat(string name, string videoUrl, string mapName)
     {
-        int mapId = DbService.GetMapIdByName(mapName);
+        int mapId = _dbService.GetMapIdByName(mapName);
 
         Strat strat = new Strat(name, videoUrl, mapId);
-        DbService.AddStrat(strat);
+        _dbService.AddStrat(strat);
     }
 
     //returns a result of GetStrat(int id) method from DatabaseService
     public Strat? GetStratId(int id)
     {
-        return DbService.GetStrat(id);
+        return _dbService.GetStrat(id);
     }
 
     //returns a result of GetAllStrats() method from DatabaseService
     public List<Strat> GetAllStrats()
     {
-        return DbService.GetAllStrats();
+        return _dbService.GetAllStrats();
     }
 
     //validates if there is a strat by given ID, returns false if there is none, or calls DeleteStrat from DBService 
@@ -35,17 +35,17 @@ public class StratService
         var strat = GetStratId(id);
         if (strat == null) return false;
 
-        DbService.DeleteStrat(id);
+        _dbService.DeleteStrat(id);
         return true;
     }
 
     public void AssignStratToCategory(int stratId, int categoryId)
     {
-        DbService.AssignStratToCategory(stratId, categoryId);
+        _dbService.AssignStratToCategory(stratId, categoryId);
     }
 
     public List<Strat>? GetStratsByCategory(int categoryId)
     {
-        return DbService.GetStratsByCategory(categoryId);
+        return _dbService.GetStratsByCategory(categoryId);
     }
 }

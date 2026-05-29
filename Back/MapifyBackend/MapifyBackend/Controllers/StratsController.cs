@@ -105,5 +105,3 @@ public class StratsController : ControllerBase
     }
 }
 
-// Assistant class for API to understand the format of a request
-
