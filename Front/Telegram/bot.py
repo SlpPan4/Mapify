@@ -1,14 +1,15 @@
-import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (ApplicationBuilder, CommandHandler, 
                           MessageHandler, filters, 
                           ContextTypes, CallbackContext,
                           CallbackQueryHandler,ConversationHandler)
+import httpx
 
 TOKEN = "8593159452:AAGOQg2uUfnw9dFJ7TZmwoxaR56i6L7U4WE"
 BOT_USERNAME = "@mapifyy_bot"
+URL = "http://localhost:5000/api/"
 
-MENU, OPTION1, OPTION2 = range(3) 
+# MENU, OPTION1, OPTION2, OPTION3 = range(4) 
 
 
 async def start_command(update: Update, context: CallbackContext) -> int:
@@ -32,10 +33,12 @@ async def start_command(update: Update, context: CallbackContext) -> int:
 #     query = update.callback_query
 #     await query.answer()
     
-#     if query.data == "option1":
-#         await query.edit_message_text(text="You selected option 1")
-#     elif query.data == "option2":
-#          await query.edit_message_text(text="You selected option 2")
+#     if query.data == "strat1":
+#         await get_strat(query,1)
+#     elif query.data == "strat2":
+#         await get_strat(query,2)
+#     elif query.data == "strat3":
+#         await get_strat(query,3)
 #     else:
 #         await query.edit_message_text(text="unc")
 #         return MENU
@@ -52,11 +55,60 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text("watafak")
 
-async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message:
-        await update.message.reply_text("custom pidar")
+async def strats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # keyboard = [
+        #     [InlineKeyboardButton("Strat 1", callback_data="strat1")],
+        #     [InlineKeyboardButton("Strat 2", callback_data="strat2")],
+        #     [InlineKeyboardButton("Strat 3", callback_data="strat3")],
+        # ]
 
+        # reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # await update.message.reply_text(
+        #     "Choose an option:", reply_markup=reply_markup
+        # )
+
+        # return MENU
     
+    args = context.args
+
+    if not args:
+        await update.message.reply_text("Provide a number of strategy")
+        return
+    
+    strat_id = args[0]
+
+    try:
+        strat_id_int = int(strat_id)
+        await get_strat(update,strat_id_int)
+
+    except ValueError:
+        await update.message.reply_text("Provide a valid number")
+
+
+async def get_strat(query, strat_id: int):
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(URL+"strats")
+        response = r.json()  
+    
+    for item in response:
+        if item.get("id") == strat_id:
+            strat = item
+    
+    message = f"""
+<b>Strategy {strat['id']}</b>
+
+📌 <b>{strat['name']}</b>
+
+{strat['description'] or 'No description available.'}
+
+🔗 Video: {strat['videoUrl']}
+🗺️ Map ID: {strat['mapId']}
+        """.strip()
+
+    await query.message.reply_text(message, parse_mode="HTML")
+
+
 # def handle_responses(text: str) -> str:
 #     process: str = text.lower()
 
@@ -100,11 +152,12 @@ def main():
            )
 
     # conv_handler = ConversationHandler(
-    #     entry_points=[CommandHandler("start", start_command)],
+    #     entry_points=[CommandHandler("strat", strats_command)],
     #     states={
     #         MENU: [CallbackQueryHandler(button)],
     #         OPTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
     #         OPTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
+    #         OPTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
     #     },
     #     fallbacks=[CommandHandler("start", start_command)]
     # )
@@ -113,7 +166,7 @@ def main():
     # app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("custom", custom_command))
+    app.add_handler(CommandHandler("strats", strats_command))
 
     # messages
     # app.add_handler(MessageHandler(filters.TEXT, handle_message))
