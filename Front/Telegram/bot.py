@@ -10,7 +10,7 @@ BOT_USERNAME = "@mapifyy_bot"
 URL = "http://localhost:5000/api/"
 
 # MENU, OPTION1, OPTION2, OPTION3 = range(4) 
-
+WAITING_FOR_USER_INPUT = range(1)
 
 async def start_command(update: Update, context: CallbackContext) -> int:
     if update.message:
@@ -44,9 +44,9 @@ async def start_command(update: Update, context: CallbackContext) -> int:
 #         return MENU
     
 
-# async def cancel_command(update: Update, context: CallbackContext) -> int:
-#     await update.message.reply_text("Operation cancelled.")
-#     return ConversationHandler.END
+async def cancel_command(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Operation cancelled.")
+    return ConversationHandler.END
 
 
 
@@ -70,23 +70,46 @@ async def strats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # return MENU
     
+    # old logic
+    """
     args = context.args
 
     if not args:
-        await update.message.reply_text("Provide a number of strategy")
+        await update.message.reply_text("")
         return
     
-    strat_id = args[0]
+    map = args[0]
 
     try:
-        strat_id_int = int(strat_id)
-        await get_strat(update,strat_id_int)
+        map_name = str(map)
+        await get_strat(update,map_name)
 
     except ValueError:
-        await update.message.reply_text("Provide a valid number")
+        await update.message.reply_text("Provide a valid map name")
+    """
+
+    await update.message.reply_text("Write the name of the map for strategy")
+    return WAITING_FOR_USER_INPUT
 
 
-async def get_strat(query, strat_id: int):
+
+async def handle_strat_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_input = update.message.text.strip().capitalize()
+
+    try:
+        map_name = str(user_input)
+        await get_strat(update,map_name)
+    
+    except ValueError:
+        await update.message.reply_text("Provide a valid map name")
+        return WAITING_FOR_USER_INPUT
+
+    return ConversationHandler.END
+
+
+
+async def get_strat(query, map_name: str):
+
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.get(URL+"strats")
         response = r.json()  
@@ -95,9 +118,12 @@ async def get_strat(query, strat_id: int):
         if item.get("id") == strat_id:
             strat = item
     
+    
+    
+    
+    
+    
     message = f"""
-<b>Strategy {strat['id']}</b>
-
 📌 <b>{strat['name']}</b>
 
 {strat['description'] or 'No description available.'}
@@ -107,6 +133,9 @@ async def get_strat(query, strat_id: int):
         """.strip()
 
     await query.message.reply_text(message, parse_mode="HTML")
+
+
+
 
 
 # def handle_responses(text: str) -> str:
