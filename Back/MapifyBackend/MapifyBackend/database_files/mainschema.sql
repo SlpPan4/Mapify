@@ -69,16 +69,37 @@ VALUES ('Oregon'),
        ('Stadium 2020');
 
 INSERT OR IGNORE INTO operators(name, side)
-VALUES ('Ash', 'attack'),
-       ('Nokk', 'attack'),
-       ('Buck', 'attack'),
-       ('Thermite', 'attack'),
-       ('Doc', 'defense'),
-       ('Lesion', 'defense'),
-       ('Azami', 'defense'),
-       ('Skopos', 'defense');
+VALUES ('Ash', 'Attack'),
+       ('Nokk', 'Attack'),
+       ('Buck', 'Attack'),
+       ('Thermite', 'Attack'),
+       ('Doc', 'Defense'),
+       ('Lesion', 'Defense'),
+       ('Azami', 'Defense'),
+       ('Skopos', 'Defense');
 
 INSERT OR IGNORE INTO strats(name, video_url, map_id, description)
 VALUES ('Cool Ash Rush', 'youtube.com', '7', ''),
        ('Thermite breach', 'linkedin.com', '2', 'cool description'),
-       ('Lesion 2f setup', 'instagram.com', '4', '')
+       ('Lesion 2f setup', 'instagram.com', '4', '');
+       
+       
+INSERT OR IGNORE INTO categories(name, side)
+VALUES ('Rush', 'Attack'),
+       ('Default', 'Attack'),
+       ('Fast plant', 'Attack'),
+       ('Frag grenade lineup', 'Attack'),
+       ('Power Position Hold', 'Defense'),
+       ('Deep roam', 'Defense'),
+       ('Soft roam', 'Defense'),
+       ('Anchoring', 'Defense');
+       
+INSERT OR IGNORE INTO strat_categories(strat_id, category_id)
+VALUES (1, 1),
+       (2, 3),
+       (3, 5);
+       
+INSERT OR IGNORE INTO strat_operators(strat_id, operator_id)
+VALUES (1, 1),
+       (2, 4),
+       (3, 6)
