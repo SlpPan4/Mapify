@@ -1,33 +1,31 @@
-# 📚 Mapify Backend API Documentation
+# Mapify Backend API Documentation
 
 Полная документация всех API endpoints проекта Mapify.
 
 ---
 
-## 📑 Содержание
+## Содержание
 
 1. [CategoriesController](#categoriescontroller)
 2. [OperatorsController](#operatorscontroller)
 3. [StratsController](#stratscontroller)
-4. [Коды ответов](#коды-ответов)
-5. [Структура данных](#структура-данных)
+4. [HTTP Status Codes](#http-status-codes)
+5. [Data Structures](#data-structures)
+6. [Quick Reference](#quick-reference)
 
 ---
 
-## 🎯 CategoriesController
+## CategoriesController
 
 **Base URL:** `/api/categories`
 
 ### GET /api/categories
 Получить все категории
 
-**Метод:** `GET`  
-**Параметры:** Нет  
-**Ответ:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/categories
 
+200 OK
 [
   {
     "id": 1,
@@ -47,27 +45,17 @@ Content-Type: application/json
 ### GET /api/categories/{id}
 Получить категорию по ID
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID категории
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/categories/1
 
+200 OK
 {
   "id": 1,
   "name": "Anti-Eco",
   "side": "T"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Category by ID 999 was not found"
 }
@@ -78,25 +66,15 @@ Content-Type: application/json
 ### GET /api/categories/category_name/{id}
 Получить только имя категории
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID категории
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/categories/category_name/1
 
+200 OK
 {
   "name": "Anti-Eco"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Category by id 999 was not found"
 }
@@ -107,45 +85,23 @@ Content-Type: application/json
 ### POST /api/categories
 Создать новую категорию
 
-**Метод:** `POST`  
-**Content-Type:** `application/json`
+```
+POST /api/categories
+Content-Type: application/json
 
-**Request Body:**
-```json
 {
   "name": "Anti-Eco",
   "side": "T"
 }
-```
 
-**Ответ успеха:**
-```
 200 OK
-Content-Type: application/json
-
 {
   "message": "Category added"
 }
-```
 
-**Ответ ошибки:**
-```
 400 Bad Request
-Content-Type: application/json
-
 {
   "error": "Name is required"
-}
-```
-
-или
-
-```
-400 Bad Request
-Content-Type: application/json
-
-{
-  "error": "Error adding category"
 }
 ```
 
@@ -154,25 +110,15 @@ Content-Type: application/json
 ### DELETE /api/categories/{id}
 Удалить категорию
 
-**Метод:** `DELETE`  
-**Параметры:**
-- `id` (int, path) - ID категории
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+DELETE /api/categories/1
 
+200 OK
 {
   "message": "Category deleted"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Category by id 999 was not found"
 }
@@ -180,21 +126,17 @@ Content-Type: application/json
 
 ---
 
-## 🎮 OperatorsController
+## OperatorsController
 
 **Base URL:** `/api/operators`
 
 ### GET /api/operators
 Получить всех операторов
 
-**Метод:** `GET`  
-**Параметры:** Нет
-
-**Ответ:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/operators
 
+200 OK
 [
   {
     "id": 1,
@@ -212,26 +154,16 @@ Content-Type: application/json
 ### GET /api/operators/{id}
 Получить оператора по ID
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID оператора
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/operators/1
 
+200 OK
 {
   "id": 1,
   "name": "IGL"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Operator not found"
 }
@@ -242,25 +174,15 @@ Content-Type: application/json
 ### GET /api/operators/by-name/{name}
 Получить ID оператора по имени
 
-**Метод:** `GET`  
-**Параметры:**
-- `name` (string, path) - Имя оператора
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/operators/by-name/IGL
 
+200 OK
 {
   "id": 1
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Operator not found"
 }
@@ -271,26 +193,15 @@ Content-Type: application/json
 ### POST /api/operators/{operatorId}/assign/{stratId}
 Назначить оператора к стратегии
 
-**Метод:** `POST`  
-**Параметры:**
-- `operatorId` (int, path) - ID оператора
-- `stratId` (int, path) - ID стратегии
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+POST /api/operators/1/assign/5
 
+200 OK
 {
   "message": "Operator assigned successfully"
 }
-```
 
-**Ответ ошибки:**
-```
 400 Bad Request
-Content-Type: application/json
-
 {
   "message": "Could not assign operator to strategy"
 }
@@ -301,26 +212,15 @@ Content-Type: application/json
 ### DELETE /api/operators/{operatorId}/remove/{stratId}
 Удалить оператора из стратегии
 
-**Метод:** `DELETE`  
-**Параметры:**
-- `operatorId` (int, path) - ID оператора
-- `stratId` (int, path) - ID стратегии
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+DELETE /api/operators/1/remove/5
 
+200 OK
 {
   "message": "Operator removed from strategy"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Relation not found"
 }
@@ -328,21 +228,17 @@ Content-Type: application/json
 
 ---
 
-## 📺 StratsController
+## StratsController
 
 **Base URL:** `/api/strats`
 
 ### GET /api/strats
 Получить все стратегии
 
-**Метод:** `GET`  
-**Параметры:** Нет
-
-**Ответ:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/strats
 
+200 OK
 [
   {
     "id": 1,
@@ -364,28 +260,18 @@ Content-Type: application/json
 ### GET /api/strats/{id}
 Получить стратегию по ID
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID стратегии
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/strats/1
 
+200 OK
 {
   "id": 1,
   "name": "B-Site Execute",
   "videoUrl": "https://youtube.com/watch?v=...",
   "mapName": "Mirage"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Strat by ID 999 was not found"
 }
@@ -396,56 +282,49 @@ Content-Type: application/json
 ### GET /api/strats/maps/{id}
 Получить карту по ID
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID карты
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/strats/maps/1
 
+200 OK
 {
   "id": 1,
   "name": "Mirage"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Map by id 999 not found"
 }
 ```
 
-или
+---
+
+### GET /api/strats/map-by-name/{mapName}
+Получить ID карты по названию
 
 ```
-400 Bad Request
-Content-Type: application/json
+GET /api/strats/map-by-name/Mirage
 
+200 OK
 {
-  "error": "Exception message"
+  "id": 1
+}
+
+404 Not Found
+{
+  "message": "Map 'Mirage' not found"
 }
 ```
 
 ---
 
 ### GET /api/strats/category/{id}
-Получить в��е стратегии категории
+Получить все стратегии категории
 
-**Метод:** `GET`  
-**Параметры:**
-- `id` (int, path) - ID категории
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+GET /api/strats/category/1
 
+200 OK
 [
   {
     "id": 1,
@@ -460,13 +339,8 @@ Content-Type: application/json
     "mapName": "Mirage"
   }
 ]
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "No strats found in category 999"
 }
@@ -477,46 +351,24 @@ Content-Type: application/json
 ### POST /api/strats
 Создать новую стратегию
 
-**Метод:** `POST`  
-**Content-Type:** `application/json`
+```
+POST /api/strats
+Content-Type: application/json
 
-**Request Body:**
-```json
 {
   "name": "B-Site Execute",
   "videoUrl": "https://youtube.com/watch?v=...",
   "mapName": "Mirage"
 }
-```
 
-**Ответ успеха:**
-```
 200 OK
-Content-Type: application/json
-
 {
   "message": "Strategy added!"
 }
-```
 
-**Ответ ошибки:**
-```
 400 Bad Request
-Content-Type: application/json
-
 {
   "error": "Name is required"
-}
-```
-
-или
-
-```
-400 Bad Request
-Content-Type: application/json
-
-{
-  "error": "Error creating strategy"
 }
 ```
 
@@ -525,26 +377,15 @@ Content-Type: application/json
 ### POST /api/strats/{stratId}/{categoryId}
 Назначить стратегию категории
 
-**Метод:** `POST`  
-**Параметры:**
-- `stratId` (int, path) - ID стратегии
-- `categoryId` (int, path) - ID категории
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+POST /api/strats/1/2
 
+200 OK
 {
   "message": "Strat assigned"
 }
-```
 
-**Ответ ошибки:**
-```
 400 Bad Request
-Content-Type: application/json
-
 {
   "error": "Exception message"
 }
@@ -555,25 +396,15 @@ Content-Type: application/json
 ### DELETE /api/strats/{id}
 Удалить стратегию
 
-**Метод:** `DELETE`  
-**Параметры:**
-- `id` (int, path) - ID стратегии
-
-**Ответ успеха:**
 ```
-200 OK
-Content-Type: application/json
+DELETE /api/strats/1
 
+200 OK
 {
   "message": "Strategy deleted!"
 }
-```
 
-**Ответ ошибки:**
-```
 404 Not Found
-Content-Type: application/json
-
 {
   "message": "Strat by ID 999 was not found"
 }
@@ -581,24 +412,24 @@ Content-Type: application/json
 
 ---
 
-## 📊 Коды ответов
+## HTTP Status Codes
 
-| Код | Описание |
-|-----|---------|
+| Code | Description |
+|------|-------------|
 | `200 OK` | Успешный запрос |
 | `400 Bad Request` | Ошибка валидации или неверные данные |
 | `404 Not Found` | Ресурс не найден |
 
 ---
 
-## 🔧 Структура данных
+## Data Structures
 
 ### Category
 ```json
 {
   "id": 1,
-  "name": "string",
-  "side": "string"
+  "name": "Anti-Eco",
+  "side": "T"
 }
 ```
 
@@ -606,7 +437,7 @@ Content-Type: application/json
 ```json
 {
   "id": 1,
-  "name": "string"
+  "name": "IGL"
 }
 ```
 
@@ -614,9 +445,9 @@ Content-Type: application/json
 ```json
 {
   "id": 1,
-  "name": "string",
-  "videoUrl": "string",
-  "mapName": "string"
+  "name": "B-Site Execute",
+  "videoUrl": "https://youtube.com/watch?v=...",
+  "mapName": "Mirage"
 }
 ```
 
@@ -624,37 +455,38 @@ Content-Type: application/json
 ```json
 {
   "id": 1,
-  "name": "string"
+  "name": "Mirage"
 }
 ```
 
 ---
 
-## 🔗 Быстрые ссылки
+## Quick Reference
 
-### Все GET запросы
-- `GET /api/categories` - Все категории
-- `GET /api/categories/{id}` - Категория по ID
-- `GET /api/categories/category_name/{id}` - Имя категории
-- `GET /api/operators` - Все операторы
-- `GET /api/operators/{id}` - Оператор по ID
-- `GET /api/operators/by-name/{name}` - ID по имени оператора
-- `GET /api/strats` - Все стратегии
-- `GET /api/strats/{id}` - Стратегия по ID
-- `GET /api/strats/maps/{id}` - Карта по ID
-- `GET /api/strats/category/{id}` - Стратегии категории
+### GET Endpoints
+- `/api/categories` — Все категории
+- `/api/categories/{id}` — Категория по ID
+- `/api/categories/category_name/{id}` — Имя категории
+- `/api/operators` — Все операторы
+- `/api/operators/{id}` — Оператор по ID
+- `/api/operators/by-name/{name}` — ID по имени оператора
+- `/api/strats` — Все стратегии
+- `/api/strats/{id}` — Стратегия по ID
+- `/api/strats/maps/{id}` — Карта по ID
+- `/api/strats/map-by-name/{mapName}` — **ID карты по названию** (новое!)
+- `/api/strats/category/{id}` — Стратегии категории
 
-### Все POST запросы
-- `POST /api/categories` - Создать категорию
-- `POST /api/operators/{operatorId}/assign/{stratId}` - Добавить оператора к стратегии
-- `POST /api/strats` - Создать стратегию
-- `POST /api/strats/{stratId}/{categoryId}` - Назначить стратегию категории
+### POST Endpoints
+- `/api/categories` — Создать категорию
+- `/api/operators/{operatorId}/assign/{stratId}` — Добавить оператора к стратегии
+- `/api/strats` — Создать стратегию
+- `/api/strats/{stratId}/{categoryId}` — Назначить стратегию категории
 
-### Все DELETE запросы
-- `DELETE /api/categories/{id}` - Удалить категорию
-- `DELETE /api/operators/{operatorId}/remove/{stratId}` - Удалить оператора из стратегии
-- `DELETE /api/strats/{id}` - Удалить стратегию
+### DELETE Endpoints
+- `/api/categories/{id}` — Удалить категорию
+- `/api/operators/{operatorId}/remove/{stratId}` — Удалить оператора из стратегии
+- `/api/strats/{id}` — Удалить стратегию
 
 ---
 
-**Последнее обновление:** 2026-06-02
+**Updated:** 2026-06-07
