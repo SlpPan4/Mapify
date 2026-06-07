@@ -299,11 +299,11 @@ GET /api/strats/maps/1
 
 ---
 
-### GET /api/strats/map-by-name/{mapName}
+### GET /api/strats/maps/byname/{mapName}
 Получить ID карты по названию
 
 ```
-GET /api/strats/map-by-name/Mirage
+GET /api/strats/maps/byname/Mirage
 
 200 OK
 {
@@ -473,7 +473,7 @@ DELETE /api/strats/1
 - `/api/strats` — Все стратегии
 - `/api/strats/{id}` — Стратегия по ID
 - `/api/strats/maps/{id}` — Карта по ID
-- `/api/strats/map-by-name/{mapName}` — **ID карты по названию** (новое!)
+- `/api/strats/maps/byname/{mapName}` — **ID карты по названию** (новое!)
 - `/api/strats/category/{id}` — Стратегии категории
 
 ### POST Endpoints
