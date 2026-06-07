@@ -374,7 +374,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/strats/{stratId}/{categoryId}
+### POST /assign/strat/{stratId}/category/{categoryId}
 Назначить стратегию категории
 
 ```
