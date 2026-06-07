@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MapifyBackend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a49a869923068b93fc8c4702b8d697557b2807d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+64f7ada89b6f03d37308dfd53d1ac375cacb5b57")]
 [assembly: System.Reflection.AssemblyProductAttribute("MapifyBackend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MapifyBackend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

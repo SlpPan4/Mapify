@@ -1,12 +1,15 @@
 ﻿using MapifyBackend.database_files;
 using MapifyBackend.Utility;
 using MapifyBackend.Utility.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static MapifyBackend.Utility.DataNormalizingHelpers.StringHelper;
 
 namespace MapifyBackend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
 public class StratsController : ControllerBase
 {
     private readonly DatabaseService _db;
@@ -18,19 +21,20 @@ public class StratsController : ControllerBase
         _stratService = stratService;
     }
     
-    //Get all strats
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
     public IActionResult GetAll()
     {
         var allStrats = _db.GetAllStrats();
-        return Ok(allStrats); //status 200 and JSON data
+        return Ok(allStrats);
     }
 
-    //Get 1 strat by ID
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Strat))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetById(int id)
     {
-        Strat? strat = _stratService.GetStratId(id);
+        Strat? strat = _stratService.GetStrat(id);
         if (strat == null)
         {
             return NotFound(new { message = $"Strat by ID {id} was not found" });
@@ -40,6 +44,9 @@ public class StratsController : ControllerBase
     }
 
     [HttpGet("maps/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Map))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult GetMapById(int id)
     {
         try
@@ -54,8 +61,10 @@ public class StratsController : ControllerBase
         }
     }
     
-    //Create strat
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Create([FromBody] StratRequest request)
     {
         try
@@ -68,20 +77,28 @@ public class StratsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
+        catch (ArgumentException)
+        {
+            return NotFound(new { error = $"No map by the name {request.MapName}" });
+        }
+        catch (Exception)
         {
             return BadRequest(new { error = "Error creating strategy" });
         }
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult DeleteStrat(int id)
     {
         if (!_stratService.DeleteStrat(id)) return NotFound(new { message = $"Strat by ID {id} was not found" });
         return Ok(new { message = "Strategy deleted!" });
     }
 
-    [HttpPost("{stratId}/{categoryId}")]
+    [HttpPost("assign/strat/{stratId}/category/{categoryId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult AssignStratToCategory(int stratId, int categoryId)
     {
         try
@@ -96,6 +113,8 @@ public class StratsController : ControllerBase
     }
 
     [HttpGet("category/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetStratsByCategory(int id)
     {
         var strats = _stratService.GetStratsByCategory(id);
@@ -103,5 +122,25 @@ public class StratsController : ControllerBase
             return NotFound(new { message = $"No strats found in category {id}" });
         return Ok(strats);  
     }
-}
 
+    [HttpGet("maps/byname/{mapName}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult GetMapIdByName(string mapName)
+    {
+        var normalizedMapName = Capitalize(mapName);
+        try
+        {
+            return Ok(_stratService.GetMapIdByName(normalizedMapName));
+        }
+        catch (ArgumentException)
+        {
+            return NotFound(new { message = $"No maps found with such name {normalizedMapName}" });
+        }
+        catch (Exception e)
+        {
+            return BadRequest((new { error = e.Message }));
+        }
+    }
+}

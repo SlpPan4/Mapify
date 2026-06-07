@@ -3,16 +3,28 @@ using Microsoft.Data.Sqlite;
 
 namespace MapifyBackend.database_files;
 
+/// <summary>
+/// Service for interacting with the SQLite database using Dapper.
+/// Provides CRUD operations for strategies, maps, categories, and operators.
+/// </summary>
 public class DatabaseService
 {
     private readonly string _connectionString;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DatabaseService"/> class.
+    /// </summary>
+    /// <param name="dbFileName">The name or path of the SQLite database file. Defaults to "database.db".</param>
     public DatabaseService(string dbFileName = "database.db")
     {
         // Setting path
         _connectionString = $"Data Source={dbFileName}";
     }
 
+    /// <summary>
+    /// Creates and opens a new SQLite database connection.
+    /// </summary>
+    /// <returns>An open <see cref="SqliteConnection"/> instance.</returns>
     private SqliteConnection GetConnection()
     {
         SqliteConnection connection = new SqliteConnection(_connectionString);
@@ -20,6 +32,10 @@ public class DatabaseService
         return connection;
     }
 
+    /// <summary>
+    /// Retrieves all strategies from the database.
+    /// </summary>
+    /// <returns>A list of <see cref="Strat"/> objects.</returns>
     public List<Strat> GetAllStrats()
     {
         using SqliteConnection db = GetConnection();
@@ -28,6 +44,10 @@ public class DatabaseService
         return db.Query<Strat>(sql).ToList();
     }
 
+    /// <summary>
+    /// Adds a new strategy to the database and assigns the generated ID to the provided object.
+    /// </summary>
+    /// <param name="strat">The strategy object containing data to insert.</param>
     public void AddStrat(Strat strat)
     {
         using SqliteConnection db = GetConnection();
@@ -44,16 +64,25 @@ public class DatabaseService
         strat.SetId(newId);
     }
 
-    // gets an id from maps table by name(names are unique)
-    public int GetMapIdByName(string mapName)
+    /// <summary>
+    /// Retrieves the ID of a map by its unique name.
+    /// </summary>
+    /// <param name="mapName">The name of the map.</param>
+    /// <returns>The map ID if found; otherwise, null.</returns>
+    public int? GetMapIdByName(string mapName)
     {
         using SqliteConnection db = GetConnection();
+        
         string sql = @"SELECT id FROM maps WHERE name = @name";
-        return db.QuerySingle<int>(sql, new { name = mapName });
+        return db.QuerySingle<int?>(sql, new { name = mapName });
     }
 
-    //returns all the data about a strat, using its id from params. Can return null if no strat has been found with this ID
-    public Strat? GetStrat(int stratId)
+    /// <summary>
+    /// Retrieves a single strategy by its ID.
+    /// </summary>
+    /// <param name="stratId">The ID of the strategy to retrieve.</param>
+    /// <returns>A <see cref="Strat"/> object if found; otherwise, null.</returns>
+    public Strat? GetStratById(int stratId)
     {
         using SqliteConnection db = GetConnection();
         string sql = "SELECT id, name, video_url AS videoUrl, map_id AS MapId, description " +
@@ -62,7 +91,10 @@ public class DatabaseService
         return db.QuerySingleOrDefault<Strat>(sql, new { strat_id = stratId });
     }
 
-    // Deletes a strat by given id directly from database
+    /// <summary>
+    /// Deletes a strategy from the database by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the strategy to delete.</param>
     public void DeleteStrat(int id)
     {
         using SqliteConnection db = GetConnection();
@@ -70,7 +102,11 @@ public class DatabaseService
         db.Execute(sql, new { id = id });
     }
     
-    // returns a map object by a given ID
+    /// <summary>
+    /// Retrieves a map by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the map.</param>
+    /// <returns>A <see cref="Map"/> object if found; otherwise, null.</returns>
     public Map? GetMapById(int id)
     {
         using SqliteConnection db = GetConnection();
@@ -78,7 +114,10 @@ public class DatabaseService
         return db.QuerySingleOrDefault<Map>(sql, new { id = id });
     }
 
-    // returns all existing categories
+    /// <summary>
+    /// Retrieves all existing categories from the database.
+    /// </summary>
+    /// <returns>A list of <see cref="Category"/> objects.</returns>
     public List<Category> GetAllCategories()
     {
         using SqliteConnection db = GetConnection();
@@ -86,7 +125,11 @@ public class DatabaseService
         return db.Query<Category>(sql).ToList();
     }
 
-    // returns a category object by an ID
+    /// <summary>
+    /// Retrieves a specific category by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the category.</param>
+    /// <returns>A <see cref="Category"/> object if found; otherwise, null.</returns>
     public Category? GetCategoryById(int id)
     {
         using SqliteConnection db = GetConnection();
@@ -94,7 +137,10 @@ public class DatabaseService
         return db.QuerySingleOrDefault<Category>(sql, new { id = id });
     }
 
-    // Deletes a category from the database
+    /// <summary>
+    /// Deletes a category from the database by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the category to delete.</param>
     public void DeleteCategory(int id)
     {
         using SqliteConnection db = GetConnection();
@@ -102,7 +148,10 @@ public class DatabaseService
         db.Execute(sql, new { id = id });
     }
 
-    // 
+    /// <summary>
+    /// Adds a new category to the database and updates the object with its generated database ID.
+    /// </summary>
+    /// <param name="category">The category object containing the data to insert.</param>
     public void AddCategory(Category category)
     {
         using SqliteConnection db = GetConnection();
@@ -118,6 +167,11 @@ public class DatabaseService
         category.SetId(newId);
     }
 
+    /// <summary>
+    /// Creates a connection between a strategy and a category in the many-to-many table.
+    /// </summary>
+    /// <param name="stratId">The ID of the strategy.</param>
+    /// <param name="categoryId">The ID of the category.</param>
     public void AssignStratToCategory(int stratId, int categoryId)
     {
         using SqliteConnection db = GetConnection();
@@ -126,6 +180,11 @@ public class DatabaseService
         db.Execute(sql, new { stratId = stratId, categoryId = categoryId });
     }
 
+    /// <summary>
+    /// Retrieves all strategies associated with a specific category.
+    /// </summary>
+    /// <param name="categoryId">The ID of the category.</param>
+    /// <returns>A list of <see cref="Strat"/> objects belonging to the category.</returns>
     public List<Strat>? GetStratsByCategory(int categoryId)
     {
         using SqliteConnection db = GetConnection();
@@ -136,6 +195,11 @@ public class DatabaseService
         return db.Query<Strat>(sql, new { categoryId = categoryId }).ToList();
     }
 
+    /// <summary>
+    /// Retrieves the name of a category by its ID.
+    /// </summary>
+    /// <param name="categoryId">The ID of the category.</param>
+    /// <returns>The name of the category as a string if found; otherwise, null.</returns>
     public string? GetCategoryNameById(int categoryId)
     {
         using SqliteConnection db = GetConnection();
@@ -191,6 +255,12 @@ public class DatabaseService
         }
     }
     
+    /// <summary>
+    /// Checks whether a specific operator is assigned to a specific strategy.
+    /// </summary>
+    /// <param name="stratId">The ID of the strategy.</param>
+    /// <param name="operatorId">The ID of the operator.</param>
+    /// <returns>True if the operator is assigned to the strategy; otherwise, false.</returns>
     public bool IsOperatorAssignedToStrat(int stratId, int operatorId)
     {
         using SqliteConnection db = GetConnection();
@@ -204,7 +274,6 @@ public class DatabaseService
 
         return db.QuerySingleOrDefault<int?>(sql, new { stratId, operatorId }) != null;
     }
-    
     
     /// <summary>
     /// Removes the connection between a strategy and an operator
@@ -242,7 +311,6 @@ public class DatabaseService
 
         return rowsAffected > 0;
     }
-    
     
     /// <summary>
     /// Retrieves a single operator by its ID.
@@ -308,6 +376,10 @@ public class DatabaseService
         );
     }
 
+    /// <summary>
+    /// Retrieves all operators from the database.
+    /// </summary>
+    /// <returns>A list of all <see cref="Operator"/> objects.</returns>
     public List<Operator> GetAllOperators()
     {
         using SqliteConnection db = GetConnection();
