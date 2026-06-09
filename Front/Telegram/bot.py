@@ -9,8 +9,16 @@ TOKEN = "8593159452:AAGOQg2uUfnw9dFJ7TZmwoxaR56i6L7U4WE"
 BOT_USERNAME = "@mapifyy_bot"
 URL = "http://localhost:5000/api/"
 
+
+# change this to a database later
+all_maps = ["calypso","border","kafe","chalet","clubhouse",
+            "bank","lair"," nighthaven"," emerald", "oregon",
+            "coastline","consulate","fortress","kanal","outback","villa"]
+
+
+
 # MENU, OPTION1, OPTION2, OPTION3 = range(4) 
-WAITING_FOR_USER_INPUT = range(1)
+WAITING_FOR_MAP_NAME, WAITING_FOR_STRAT_NUMBER = range(2)
 
 async def start_command(update: Update, context: CallbackContext) -> int:
     if update.message:
@@ -89,53 +97,86 @@ async def strats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
 
     await update.message.reply_text("Write the name of the map for strategy")
-    return WAITING_FOR_USER_INPUT
+    return WAITING_FOR_MAP_NAME
 
 
 
 async def handle_strat_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_input = update.message.text.strip().capitalize()
+    user_input = update.message.text.strip().lower()
 
-    try:
-        map_name = str(user_input)
-        await get_strat(update,map_name)
+    print(user_input)
     
-    except ValueError:
-        await update.message.reply_text("Provide a valid map name")
-        return WAITING_FOR_USER_INPUT
+    if user_input == "cancel":
+        await update.message.reply_text("Operation cancelled.")
+        return ConversationHandler.END
 
-    return ConversationHandler.END
+    if user_input in all_maps:
+        print("map in the list")
+        return await get_strat(update,user_input, context)
+    
+    
+    await update.message.reply_text("Provide a valid map name")
+    return WAITING_FOR_MAP_NAME
 
 
 
-async def get_strat(query, map_name: str):
+async def get_strat(update, map_name: str, context: ContextTypes.DEFAULT_TYPE):
 
     async with httpx.AsyncClient(timeout=10) as client:
+        # get map id
+        m = await client.get(URL+"strats/maps/byname/"+map_name)
+        map_id = m.json()
+        
+        # get all strats
         r = await client.get(URL+"strats")
         response = r.json()  
     
-    for item in response:
-        if item.get("id") == strat_id:
-            strat = item
-    
-    
-    
-    
-    
-    
-    message = f"""
-📌 <b>{strat['name']}</b>
 
-{strat['description'] or 'No description available.'}
+    matching_items = [item for item in response if item.get("mapId") == map_id]
+    
+    context.user_data["matching_strats"] = matching_items
+    context.user_data["map_name"] = map_name
 
-🔗 Video: {strat['videoUrl']}
-🗺️ Map ID: {strat['mapId']}
-        """.strip()
+    await update.message.reply_text("choose the strat number: " \
+    f"from 1 to {len(matching_items)}")
 
-    await query.message.reply_text(message, parse_mode="HTML")
+    return WAITING_FOR_STRAT_NUMBER
 
 
 
+async def handle_strat_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_input = update.message.text.strip()
+    matching_items = context.user_data.get("matching_strats")
+    map_name = context.user_data.get("map_name")
+
+    try:
+        strat_number = int(user_input)
+
+        if not matching_items or strat_number < 1:
+            raise ValueError
+        
+        strat = matching_items[strat_number-1]
+        
+        
+        
+        message = f"""
+    📌 <b>{strat['name']}</b>
+
+    {strat['description'] or 'No description available.'}
+
+    🔗 Video: {strat['videoUrl']}
+    🗺️ Map Name: {map_name}
+            """.strip()
+
+        await update.message.reply_text(message, parse_mode="HTML")
+
+
+    except ValueError:
+        await update.message.reply_text("Please send a number between 1 and {len(matching_items)}")
+        return WAITING_FOR_STRAT_NUMBER
+    
+    context.user_data.clear()
+    return ConversationHandler.END
 
 
 # def handle_responses(text: str) -> str:
@@ -180,19 +221,23 @@ def main():
            .build()
            )
 
-    # conv_handler = ConversationHandler(
-    #     entry_points=[CommandHandler("strat", strats_command)],
-    #     states={
-    #         MENU: [CallbackQueryHandler(button)],
-    #         OPTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
-    #         OPTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
-    #         OPTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, cancel_command)],
-    #     },
-    #     fallbacks=[CommandHandler("start", start_command)]
-    # )
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("strats", strats_command)],
+        states={
+            WAITING_FOR_MAP_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, 
+                               handle_strat_input)
+            ],
+            WAITING_FOR_STRAT_NUMBER: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, 
+                               handle_strat_number)
+            ]
+        },
+        fallbacks=[CommandHandler("cancel", cancel_command)]
+    )
 
     # commands
-    # app.add_handler(conv_handler)
+    app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("strats", strats_command))
