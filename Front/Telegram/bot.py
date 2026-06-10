@@ -1,8 +1,10 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (ApplicationBuilder, CommandHandler, 
                           MessageHandler, filters, 
                           ContextTypes, CallbackContext,
-                          CallbackQueryHandler,ConversationHandler)
+                          CallbackQueryHandler,ConversationHandler,
+                          )
+from telegram_inline_keyboard_builder import InlineKeyboardBuilder
 import httpx
 
 TOKEN = "8593159452:AAGOQg2uUfnw9dFJ7TZmwoxaR56i6L7U4WE"
@@ -20,36 +22,28 @@ all_maps = ["calypso","border","kafe","chalet","clubhouse",
 # MENU, OPTION1, OPTION2, OPTION3 = range(4) 
 WAITING_FOR_MAP_NAME, WAITING_FOR_STRAT_NUMBER = range(2)
 
+
+# inline keyboard (no logic yet)
+"""
+maps_keyboard = (
+    InlineKeyboardBuilder(buttons_per_row=5)
+    .add_callback_button(all_maps[10],"Coastline")
+    .add_callback_button(all_maps[11],"Consulate")
+    .add_callback_button(all_maps[4],"Club house")
+    .build()
+)
+"""
+
+# reply keyboard
+maps_keyboard = [[all_maps[10],all_maps[11],all_maps[4]]]
+
+
+
+
 async def start_command(update: Update, context: CallbackContext) -> int:
     if update.message:
         await update.message.reply_text("start!!")
-#     keyboard = [
-#         [InlineKeyboardButton("Option 1", callback_data="option1")],
-#         [InlineKeyboardButton("Option 2", callback_data="option2")]
-#     ]
 
-#     reply_markup = InlineKeyboardMarkup(keyboard)
-
-#     await update.message.reply_text(
-#         "Choose an option:", reply_markup=reply_markup
-#     )
-
-#     return MENU
-
-
-# async def button(update: Update, context: CallbackContext) -> int:
-#     query = update.callback_query
-#     await query.answer()
-    
-#     if query.data == "strat1":
-#         await get_strat(query,1)
-#     elif query.data == "strat2":
-#         await get_strat(query,2)
-#     elif query.data == "strat3":
-#         await get_strat(query,3)
-#     else:
-#         await query.edit_message_text(text="unc")
-#         return MENU
     
 
 async def cancel_command(update: Update, context: CallbackContext) -> int:
@@ -64,19 +58,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("watafak")
 
 async def strats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        # keyboard = [
-        #     [InlineKeyboardButton("Strat 1", callback_data="strat1")],
-        #     [InlineKeyboardButton("Strat 2", callback_data="strat2")],
-        #     [InlineKeyboardButton("Strat 3", callback_data="strat3")],
-        # ]
-
-        # reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # await update.message.reply_text(
-        #     "Choose an option:", reply_markup=reply_markup
-        # )
-
-        # return MENU
     
     # old logic
     """
@@ -96,7 +77,17 @@ async def strats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Provide a valid map name")
     """
 
-    await update.message.reply_text("Write the name of the map for strategy")
+    await update.message.reply_text(
+        "Choose the name of the map for strategy",
+
+        reply_markup=ReplyKeyboardMarkup(
+            maps_keyboard, 
+            one_time_keyboard=True,
+            input_field_placeholder="Choose the map",
+            resize_keyboard=True
+        )
+
+    )
     return WAITING_FOR_MAP_NAME
 
 
@@ -131,15 +122,28 @@ async def get_strat(update, map_name: str, context: ContextTypes.DEFAULT_TYPE):
         r = await client.get(URL+"strats")
         response = r.json()  
     
-
+    items_keyboard = [[]]
     matching_items = [item for item in response if item.get("mapId") == map_id]
-    
+
+    for i in range(len(matching_items)):
+        items_keyboard[0].append(str(i+1))
+
+
     context.user_data["matching_strats"] = matching_items
     context.user_data["map_name"] = map_name
 
-    await update.message.reply_text("choose the strat number: " \
-    f"from 1 to {len(matching_items)}")
-
+    await update.message.reply_text(
+        f"choose the strat number: from 1 to {len(matching_items)}",
+        reply_markup=ReplyKeyboardMarkup(
+            items_keyboard, 
+            one_time_keyboard=True,
+            input_field_placeholder="Choose the number",
+            resize_keyboard=True
+        )
+        )
+    
+    items_keyboard[0] = []
+    
     return WAITING_FOR_STRAT_NUMBER
 
 
@@ -172,37 +176,14 @@ async def handle_strat_number(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
     except ValueError:
-        await update.message.reply_text("Please send a number between 1 and {len(matching_items)}")
+        await update.message.reply_text("Please select a number between 1 and {len(matching_items)}")
         return WAITING_FOR_STRAT_NUMBER
     
     context.user_data.clear()
     return ConversationHandler.END
 
 
-# def handle_responses(text: str) -> str:
-#     process: str = text.lower()
 
-#     if "hello" in process:
-#         return "Hi"
-    
-#     if "dinahu" in process:
-#         return "TI CHE AHUEL"
-    
-
-#     return "ja nie ponimaju"
-
-
-
-# async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     text: str = update.message.text
-
-#     print(f"User: ({update.message.chat.id}): '{text}'")
-
-#     response: str = handle_responses(text)    
-
-#     print(f"Bot: {response}")
-    
-#     await update.message.reply_text(response)
 
 
 
