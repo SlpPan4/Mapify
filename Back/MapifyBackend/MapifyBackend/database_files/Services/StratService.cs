@@ -24,7 +24,7 @@ public class StratService
     /// <param name="videoUrl">The URL of the strategy's video guide.</param>
     /// <param name="mapName">The name of the map this strategy belongs to.</param>
     /// <throws cref="ArgumentException">Thrown when the specified map name does not exist in the database.</throws>
-    public void CreateStrat(string name, string videoUrl, string mapName)
+    public async Task<int> CreateStrat(string name, string videoUrl, string mapName)
     {
         int? mapId = GetMapIdByName(mapName);
 
@@ -32,7 +32,7 @@ public class StratService
             throw new ArgumentException($"Map '{mapName}' does not exist");
 
         Strat strat = new Strat(name, videoUrl, mapId.Value);
-        _dbService.AddStrat(strat);
+        return await _dbService.AddStrat(strat);
     }
 
     /// <summary>
@@ -50,18 +50,18 @@ public class StratService
     /// </summary>
     /// <param name="id">The ID of the strategy.</param>
     /// <returns>The <see cref="Strat"/> object if found; otherwise, null.</returns>
-    public Strat? GetStrat(int id)
+    public async Task<Strat?> GetStrat(int id)
     {
-        return _dbService.GetStratById(id);
+        return await _dbService.GetStratById(id);
     }
 
     /// <summary>
     /// Retrieves all strategies available in the database.
     /// </summary>
     /// <returns>A list of all <see cref="Strat"/> objects.</returns>
-    public List<Strat> GetAllStrats()
+    public async Task<List<Strat>> GetAllStrats()
     {
-        return _dbService.GetAllStrats();
+        return await _dbService.GetAllStrats();
     }
 
     /// <summary>

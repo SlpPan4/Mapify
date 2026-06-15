@@ -36,32 +36,33 @@ public class DatabaseService
     /// Retrieves all strategies from the database.
     /// </summary>
     /// <returns>A list of <see cref="Strat"/> objects.</returns>
-    public List<Strat> GetAllStrats()
+    public async Task<List<Strat>> GetAllStrats()
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description " +
                      "FROM strats";
-        return db.Query<Strat>(sql).ToList();
+        var result = await db.QueryAsync<Strat>(sql);
+        return result.ToList();
     }
 
     /// <summary>
     /// Adds a new strategy to the database and assigns the generated ID to the provided object.
     /// </summary>
     /// <param name="strat">The strategy object containing data to insert.</param>
-    public void AddStrat(Strat strat)
+    public async Task<int> AddStrat(Strat strat)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
+
         string sql = @"INSERT INTO strats (name, video_url, map_id)
-                        VALUES (@name, @videoUrl, @mapId);
-                        SELECT last_insert_rowid();";
-        int newId = db.QuerySingle<int>(sql, new
+                   VALUES (@name, @videoUrl, @mapId);
+                   SELECT last_insert_rowid();";
+
+        return await db.QuerySingleAsync<int>(sql, new
         {
             name = strat.Name,
             videoUrl = strat.VideoUrl,
             mapId = strat.MapId
         });
-
-        strat.SetId(newId);
     }
 
     /// <summary>
@@ -82,13 +83,14 @@ public class DatabaseService
     /// </summary>
     /// <param name="stratId">The ID of the strategy to retrieve.</param>
     /// <returns>A <see cref="Strat"/> object if found; otherwise, null.</returns>
-    public Strat? GetStratById(int stratId)
+    public async Task<Strat?> GetStratById(int stratId)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = "SELECT id, name, video_url AS videoUrl, map_id AS MapId, description " +
                      "FROM strats " +
                      "WHERE id = @strat_id";
-        return db.QuerySingleOrDefault<Strat>(sql, new { strat_id = stratId });
+        var result = await db.QuerySingleOrDefaultAsync(sql, new { strat_id = stratId });
+        return result;
     }
 
     /// <summary>

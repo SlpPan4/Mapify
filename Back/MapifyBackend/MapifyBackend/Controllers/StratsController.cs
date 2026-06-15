@@ -23,18 +23,18 @@ public class StratsController : ControllerBase
     
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var allStrats = _db.GetAllStrats();
+        var allStrats = await _stratService.GetAllStrats();
         return Ok(allStrats);
     }
 
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Strat))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        Strat? strat = _stratService.GetStrat(id);
+        Strat? strat = await _stratService.GetStrat(id);
         if (strat == null)
         {
             return NotFound(new { message = $"Strat by ID {id} was not found" });
@@ -65,12 +65,12 @@ public class StratsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Create([FromBody] StratRequest request)
+    public async Task<IActionResult> Create([FromBody] StratRequest request)
     {
         try
         {
             InputValidator.ValidateStratRequest(request);
-            _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName);
+            await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName);
             return Ok(new { message = "Strategy added!" });
         }
         catch (ValidationException ex)
