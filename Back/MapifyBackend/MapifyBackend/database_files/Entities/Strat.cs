@@ -14,6 +14,14 @@ public class Strat
         VideoUrl = videoUrl;
         MapId = mapId;
     }
+
+    public Strat(string stratName, string videoUrl, int mapId, string? description)
+    {
+        Name = stratName;
+        VideoUrl = videoUrl;
+        MapId = mapId;
+        Description = description;
+    }
     
     public Strat(int id, string stratName, string videoUrl, int mapId, string? description)
     {

@@ -34,4 +34,29 @@ public static class InputValidator
             throw new ValidationException("Side must be only 'Attack' or 'Defense'");
         }
     }
+
+    public static void ValidateStratSubmissionRequest(StratSubmissionRequest request)
+    {
+        ValidateString(request.Name, "Name", 100);
+        ValidateString(request.VideoUrl, "VideoUrl", 500);
+        ValidateString(request.MapName, "MapName", 100);
+
+        if (request.Description is { Length: > 1000 })
+            throw new ValidationException("Description must be less than 1000 characters");
+
+        if (request.CategoryIds.Any(id => id <= 0))
+            throw new ValidationException("CategoryIds must contain only positive IDs");
+
+        if (request.OperatorIds.Any(id => id <= 0))
+            throw new ValidationException("OperatorIds must contain only positive IDs");
+    }
+
+    public static void ValidateCategorySubmissionRequest(CategorySubmissionRequest request)
+    {
+        ValidateCategoryRequest(new CategoryRequest
+        {
+            Name = request.Name,
+            Side = request.Side
+        });
+    }
 }

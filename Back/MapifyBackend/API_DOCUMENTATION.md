@@ -1,492 +1,728 @@
 # Mapify Backend API Documentation
 
-Полная документация всех API endpoints проекта Mapify.
+Updated: 2026-06-30
 
----
+Base URL during local development depends on the ASP.NET launch profile, usually `http://localhost:{port}`. All endpoints below are relative to that base URL and return JSON.
 
-## Содержание
+## Conventions
 
-1. [CategoriesController](#categoriescontroller)
-2. [OperatorsController](#operatorscontroller)
-3. [StratsController](#stratscontroller)
-4. [HTTP Status Codes](#http-status-codes)
-5. [Data Structures](#data-structures)
-6. [Quick Reference](#quick-reference)
+- `side` must be `"Attack"` or `"Defense"`.
+- Current create/update-style endpoints generally return `200 OK` instead of `201 Created`.
+- Admin submission endpoints are route-separated but not protected by backend authentication yet. They must not be exposed publicly without hosting/auth restrictions.
+- Public frontend submission endpoints should use `/api/submissions/...`, not the direct `/api/strats` or `/api/categories` create endpoints.
 
----
+## Data Shapes
 
-## CategoriesController
+### Strat
 
-**Base URL:** `/api/categories`
-
-### GET /api/categories
-Получить все категории
-
+```json
+{
+  "id": 1,
+  "name": "Cool Ash Rush",
+  "videoUrl": "youtube.com",
+  "mapId": 7,
+  "description": ""
+}
 ```
-GET /api/categories
 
-200 OK
+### Map
+
+```json
+{
+  "id": 1,
+  "name": "Oregon"
+}
+```
+
+### Category
+
+```json
+{
+  "id": 1,
+  "name": "Rush",
+  "side": "Attack"
+}
+```
+
+### Operator
+
+```json
+{
+  "id": 1,
+  "name": "Ash",
+  "side": "Attack"
+}
+```
+
+### Strat Submission
+
+```json
+{
+  "id": 1,
+  "name": "Oregon attic execute",
+  "videoUrl": "https://youtube.com/watch?v=example",
+  "mapId": 1,
+  "description": "Open attic wall and plant behind half wall.",
+  "submittedAt": "2026-06-30T12:00:00",
+  "categoryIds": [1, 2],
+  "operatorIds": [1, 4]
+}
+```
+
+### Category Submission
+
+```json
+{
+  "id": 1,
+  "name": "Shield clear",
+  "side": "Attack",
+  "submittedAt": "2026-06-30T12:00:00"
+}
+```
+
+## Strats
+
+Base route: `/api/strats`
+
+### Get All Strats
+
+`GET /api/strats`
+
+Response `200 OK`:
+
+```json
 [
   {
     "id": 1,
-    "name": "Anti-Eco",
-    "side": "T"
-  },
-  {
-    "id": 2,
-    "name": "Full Buy",
-    "side": "CT"
+    "name": "Cool Ash Rush",
+    "videoUrl": "youtube.com",
+    "mapId": 7,
+    "description": ""
   }
 ]
 ```
 
----
+### Get Strat By ID
 
-### GET /api/categories/{id}
-Получить категорию по ID
+`GET /api/strats/{id}`
 
-```
-GET /api/categories/1
+Response `200 OK`:
 
-200 OK
+```json
 {
   "id": 1,
-  "name": "Anti-Eco",
-  "side": "T"
-}
-
-404 Not Found
-{
-  "message": "Category by ID 999 was not found"
+  "name": "Cool Ash Rush",
+  "videoUrl": "youtube.com",
+  "mapId": 7,
+  "description": ""
 }
 ```
 
----
+Response `404 Not Found`:
 
-### GET /api/categories/category_name/{id}
-Получить только имя категории
-
-```
-GET /api/categories/category_name/1
-
-200 OK
-{
-  "name": "Anti-Eco"
-}
-
-404 Not Found
-{
-  "message": "Category by id 999 was not found"
-}
-```
-
----
-
-### POST /api/categories
-Создать новую категорию
-
-```
-POST /api/categories
-Content-Type: application/json
-
-{
-  "name": "Anti-Eco",
-  "side": "T"
-}
-
-200 OK
-{
-  "message": "Category added"
-}
-
-400 Bad Request
-{
-  "error": "Name is required"
-}
-```
-
----
-
-### DELETE /api/categories/{id}
-Удалить категорию
-
-```
-DELETE /api/categories/1
-
-200 OK
-{
-  "message": "Category deleted"
-}
-
-404 Not Found
-{
-  "message": "Category by id 999 was not found"
-}
-```
-
----
-
-## OperatorsController
-
-**Base URL:** `/api/operators`
-
-### GET /api/operators
-Получить всех операторов
-
-```
-GET /api/operators
-
-200 OK
-[
-  {
-    "id": 1,
-    "name": "IGL"
-  },
-  {
-    "id": 2,
-    "name": "AWP"
-  }
-]
-```
-
----
-
-### GET /api/operators/{id}
-Получить оператора по ID
-
-```
-GET /api/operators/1
-
-200 OK
-{
-  "id": 1,
-  "name": "IGL"
-}
-
-404 Not Found
-{
-  "message": "Operator not found"
-}
-```
-
----
-
-### GET /api/operators/by-name/{name}
-Получить ID оператора по имени
-
-```
-GET /api/operators/by-name/IGL
-
-200 OK
-{
-  "id": 1
-}
-
-404 Not Found
-{
-  "message": "Operator not found"
-}
-```
-
----
-
-### POST /api/operators/{operatorId}/assign/{stratId}
-Назначить оператора к стратегии
-
-```
-POST /api/operators/1/assign/5
-
-200 OK
-{
-  "message": "Operator assigned successfully"
-}
-
-400 Bad Request
-{
-  "message": "Could not assign operator to strategy"
-}
-```
-
----
-
-### DELETE /api/operators/{operatorId}/remove/{stratId}
-Удалить оператора из стратегии
-
-```
-DELETE /api/operators/1/remove/5
-
-200 OK
-{
-  "message": "Operator removed from strategy"
-}
-
-404 Not Found
-{
-  "message": "Relation not found"
-}
-```
-
----
-
-## StratsController
-
-**Base URL:** `/api/strats`
-
-### GET /api/strats
-Получить все стратегии
-
-```
-GET /api/strats
-
-200 OK
-[
-  {
-    "id": 1,
-    "name": "B-Site Execute",
-    "videoUrl": "https://youtube.com/watch?v=...",
-    "mapName": "Mirage"
-  },
-  {
-    "id": 2,
-    "name": "A-Site Fast",
-    "videoUrl": "https://youtube.com/watch?v=...",
-    "mapName": "Inferno"
-  }
-]
-```
-
----
-
-### GET /api/strats/{id}
-Получить стратегию по ID
-
-```
-GET /api/strats/1
-
-200 OK
-{
-  "id": 1,
-  "name": "B-Site Execute",
-  "videoUrl": "https://youtube.com/watch?v=...",
-  "mapName": "Mirage"
-}
-
-404 Not Found
+```json
 {
   "message": "Strat by ID 999 was not found"
 }
 ```
 
----
+### Create Strat Directly
 
-### GET /api/strats/maps/{id}
-Получить карту по ID
+`POST /api/strats`
 
-```
-GET /api/strats/maps/1
+Use this only for trusted/internal tools. Public user submissions should go through `/api/submissions/strats`.
 
-200 OK
+Request:
+
+```json
 {
-  "id": 1,
-  "name": "Mirage"
-}
-
-404 Not Found
-{
-  "message": "Map by id 999 not found"
+  "name": "Oregon rush",
+  "videoUrl": "https://youtube.com/watch?v=example",
+  "mapName": "Oregon"
 }
 ```
 
----
+Response `200 OK`:
 
-### GET /api/strats/maps/byname/{mapName}
-Получить ID карты по названию
-
-```
-GET /api/strats/maps/byname/Mirage
-
-200 OK
+```json
 {
-  "id": 1
-}
-
-404 Not Found
-{
-  "message": "Map 'Mirage' not found"
+  "message": "Strategy added!"
 }
 ```
 
----
+Response `400 Bad Request`:
 
-### GET /api/strats/category/{id}
-Получить все стратегии категории
-
+```json
+{
+  "error": "Name is required"
+}
 ```
-GET /api/strats/category/1
 
-200 OK
+Response `404 Not Found`:
+
+```json
+{
+  "error": "No map by the name Oregon"
+}
+```
+
+### Delete Strat
+
+`DELETE /api/strats/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Strategy deleted!"
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Strat by ID 999 was not found"
+}
+```
+
+### Assign Strat To Category
+
+`POST /api/strats/assign/strat/{stratId}/category/{categoryId}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Strat assigned"
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "error": "No category by id 999"
+}
+```
+
+### Get Strats By Category
+
+`GET /api/strats/category/{id}`
+
+Response `200 OK`:
+
+```json
 [
   {
     "id": 1,
-    "name": "B-Site Execute",
-    "videoUrl": "https://youtube.com/watch?v=...",
-    "mapName": "Mirage"
-  },
-  {
-    "id": 3,
-    "name": "B-Site Stack",
-    "videoUrl": "https://youtube.com/watch?v=...",
-    "mapName": "Mirage"
+    "name": "Cool Ash Rush",
+    "videoUrl": "youtube.com",
+    "mapId": 7,
+    "description": ""
   }
 ]
+```
 
-404 Not Found
+Response `404 Not Found`:
+
+```json
 {
   "message": "No strats found in category 999"
 }
 ```
 
----
+### Get Map By ID
 
-### POST /api/strats
-Создать новую стратегию
+`GET /api/strats/maps/{id}`
 
-```
-POST /api/strats
-Content-Type: application/json
+Response `200 OK`:
 
-{
-  "name": "B-Site Execute",
-  "videoUrl": "https://youtube.com/watch?v=...",
-  "mapName": "Mirage"
-}
-
-200 OK
-{
-  "message": "Strategy added!"
-}
-
-400 Bad Request
-{
-  "error": "Name is required"
-}
-```
-
----
-
-### POST /assign/strat/{stratId}/category/{categoryId}
-Назначить стратегию категории
-
-```
-POST /api/strats/1/2
-
-200 OK
-{
-  "message": "Strat assigned"
-}
-
-400 Bad Request
-{
-  "error": "Exception message"
-}
-```
-
----
-
-### DELETE /api/strats/{id}
-Удалить стратегию
-
-```
-DELETE /api/strats/1
-
-200 OK
-{
-  "message": "Strategy deleted!"
-}
-
-404 Not Found
-{
-  "message": "Strat by ID 999 was not found"
-}
-```
-
----
-
-## HTTP Status Codes
-
-| Code | Description |
-|------|-------------|
-| `200 OK` | Успешный запрос |
-| `400 Bad Request` | Ошибка валидации или неверные данные |
-| `404 Not Found` | Ресурс не найден |
-
----
-
-## Data Structures
-
-### Category
 ```json
 {
   "id": 1,
-  "name": "Anti-Eco",
-  "side": "T"
+  "name": "Oregon"
 }
 ```
 
-### Operator
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Map by id 999 not found"
+}
+```
+
+### Get Map ID By Name
+
+`GET /api/strats/maps/byname/{mapName}`
+
+Response `200 OK`:
+
+```json
+1
+```
+
+Current behavior may return `200 OK` with `null` for an unknown map.
+
+## Categories
+
+Base route: `/api/categories`
+
+### Get All Categories
+
+`GET /api/categories`
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Rush",
+    "side": "Attack"
+  }
+]
+```
+
+### Get Category By ID
+
+`GET /api/categories/{id}`
+
+Response `200 OK`:
+
 ```json
 {
   "id": 1,
-  "name": "IGL"
+  "name": "Rush",
+  "side": "Attack"
 }
 ```
 
-### Strat
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Category by ID 999 was not found"
+}
+```
+
+### Create Category Directly
+
+`POST /api/categories`
+
+Use this only for trusted/internal tools. Public user submissions should go through `/api/submissions/categories`.
+
+Request:
+
+```json
+{
+  "name": "Shield clear",
+  "side": "Attack"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Category added"
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "error": "Side must be only 'Attack' or 'Defense'"
+}
+```
+
+### Delete Category
+
+`DELETE /api/categories/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Category deleted"
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Category by id 999 was not found"
+}
+```
+
+### Get Category Name
+
+`GET /api/categories/category_name/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "name": "Rush"
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Category by id 999 was not found"
+}
+```
+
+## Operators
+
+Base route: `/api/operators`
+
+### Get All Operators
+
+`GET /api/operators`
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Ash",
+    "side": "Attack"
+  }
+]
+```
+
+### Get Operator By ID
+
+`GET /api/operators/{id}`
+
+Response `200 OK`:
+
 ```json
 {
   "id": 1,
-  "name": "B-Site Execute",
-  "videoUrl": "https://youtube.com/watch?v=...",
-  "mapName": "Mirage"
+  "name": "Ash",
+  "side": "Attack"
 }
 ```
 
-### Map
+Response `404 Not Found`:
+
 ```json
 {
-  "id": 1,
-  "name": "Mirage"
+  "message": "Operator not found"
 }
 ```
 
----
+### Get Operator ID By Name
 
-## Quick Reference
+`GET /api/operators/by-name/{name}`
 
-### GET Endpoints
-- `/api/categories` — Все категории
-- `/api/categories/{id}` — Категория по ID
-- `/api/categories/category_name/{id}` — Имя категории
-- `/api/operators` — Все операторы
-- `/api/operators/{id}` — Оператор по ID
-- `/api/operators/by-name/{name}` — ID по имени оператора
-- `/api/strats` — Все стратегии
-- `/api/strats/{id}` — Стратегия по ID
-- `/api/strats/maps/{id}` — Карта по ID
-- `/api/strats/maps/byname/{mapName}` — **ID карты по названию** (новое!)
-- `/api/strats/category/{id}` — Стратегии категории
+Response `200 OK`:
 
-### POST Endpoints
-- `/api/categories` — Создать категорию
-- `/api/operators/{operatorId}/assign/{stratId}` — Добавить оператора к стратегии
-- `/api/strats` — Создать стратегию
-- `/api/strats/{stratId}/{categoryId}` — Назначить стратегию категории
+```json
+{
+  "id": 1
+}
+```
 
-### DELETE Endpoints
-- `/api/categories/{id}` — Удалить категорию
-- `/api/operators/{operatorId}/remove/{stratId}` — Удалить оператора из стратегии
-- `/api/strats/{id}` — Удалить стратегию
+Response `404 Not Found`:
 
----
+```json
+{
+  "message": "Operator not found"
+}
+```
 
-**Updated:** 2026-06-07
+### Assign Operator To Strat
+
+`POST /api/operators/{operatorId}/assign/{stratId}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Operator assigned successfully"
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "message": "Could not assign operator to strategy"
+}
+```
+
+### Remove Operator From Strat
+
+`DELETE /api/operators/{operatorId}/remove/{stratId}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Operator removed from strategy"
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Relation not found"
+}
+```
+
+## Submissions
+
+Base route: `/api/submissions`
+
+These endpoints store user-provided content in pending tables. Approved content is moved into the normal `strats`, `categories`, `strat_categories`, and `strat_operators` tables.
+
+### Submit Strat For Approval
+
+`POST /api/submissions/strats`
+
+Request:
+
+```json
+{
+  "name": "Oregon attic execute",
+  "videoUrl": "https://youtube.com/watch?v=example",
+  "mapName": "Oregon",
+  "description": "Open attic wall and plant behind half wall.",
+  "categoryIds": [1, 2],
+  "operatorIds": [1, 4]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Strategy submitted for approval",
+  "submissionId": 1
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "error": "VideoUrl is required"
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "error": "Map 'Unknown' does not exist"
+}
+```
+
+### Submit Category For Approval
+
+`POST /api/submissions/categories`
+
+Request:
+
+```json
+{
+  "name": "Shield clear",
+  "side": "Attack"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Category submitted for approval",
+  "submissionId": 1
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "error": "Side must be only 'Attack' or 'Defense'"
+}
+```
+
+## Admin Submission Review
+
+Base route: `/api/submissions/admin`
+
+These endpoints are intended for a future admin panel. They are not protected by backend auth yet.
+
+### Get Pending Strat Submissions
+
+`GET /api/submissions/admin/strats`
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Oregon attic execute",
+    "videoUrl": "https://youtube.com/watch?v=example",
+    "mapId": 1,
+    "description": "Open attic wall and plant behind half wall.",
+    "submittedAt": "2026-06-30T12:00:00",
+    "categoryIds": [1, 2],
+    "operatorIds": [1, 4]
+  }
+]
+```
+
+### Get Pending Strat Submission
+
+`GET /api/submissions/admin/strats/{id}`
+
+Response `200 OK`: a single strat submission.
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Strategy submission by ID 999 was not found"
+}
+```
+
+### Approve Pending Strat Submission
+
+`POST /api/submissions/admin/strats/{id}/approve`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Strategy submission approved",
+  "stratId": 4
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Strategy submission by ID 999 was not found"
+}
+```
+
+### Reject Pending Strat Submission
+
+`DELETE /api/submissions/admin/strats/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Strategy submission rejected"
+}
+```
+
+### Get Pending Category Submissions
+
+`GET /api/submissions/admin/categories`
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Shield clear",
+    "side": "Attack",
+    "submittedAt": "2026-06-30T12:00:00"
+  }
+]
+```
+
+### Get Pending Category Submission
+
+`GET /api/submissions/admin/categories/{id}`
+
+Response `200 OK`: a single category submission.
+
+Response `404 Not Found`:
+
+```json
+{
+  "message": "Category submission by ID 999 was not found"
+}
+```
+
+### Approve Pending Category Submission
+
+`POST /api/submissions/admin/categories/{id}/approve`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Category submission approved",
+  "categoryId": 9
+}
+```
+
+### Reject Pending Category Submission
+
+`DELETE /api/submissions/admin/categories/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "message": "Category submission rejected"
+}
+```
+
+## Frontend Quick Reference
+
+Read endpoints:
+
+- `GET /api/strats`
+- `GET /api/strats/{id}`
+- `GET /api/strats/category/{id}`
+- `GET /api/strats/maps/{id}`
+- `GET /api/strats/maps/byname/{mapName}`
+- `GET /api/categories`
+- `GET /api/categories/{id}`
+- `GET /api/categories/category_name/{id}`
+- `GET /api/operators`
+- `GET /api/operators/{id}`
+- `GET /api/operators/by-name/{name}`
+
+Public submission endpoints:
+
+- `POST /api/submissions/strats`
+- `POST /api/submissions/categories`
+
+Trusted/admin mutation endpoints:
+
+- `POST /api/strats`
+- `DELETE /api/strats/{id}`
+- `POST /api/strats/assign/strat/{stratId}/category/{categoryId}`
+- `POST /api/categories`
+- `DELETE /api/categories/{id}`
+- `POST /api/operators/{operatorId}/assign/{stratId}`
+- `DELETE /api/operators/{operatorId}/remove/{stratId}`
+- `GET /api/submissions/admin/strats`
+- `GET /api/submissions/admin/strats/{id}`
+- `POST /api/submissions/admin/strats/{id}/approve`
+- `DELETE /api/submissions/admin/strats/{id}`
+- `GET /api/submissions/admin/categories`
+- `GET /api/submissions/admin/categories/{id}`
+- `POST /api/submissions/admin/categories/{id}/approve`
+- `DELETE /api/submissions/admin/categories/{id}`

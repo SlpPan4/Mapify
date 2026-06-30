@@ -20,7 +20,7 @@ public class StratsController : ControllerBase
         _db = db;
         _stratService = stratService;
     }
-    
+    // get all strats
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
     public async Task<IActionResult> GetAll()
@@ -28,7 +28,8 @@ public class StratsController : ControllerBase
         var allStrats = await _stratService.GetAllStrats();
         return Ok(allStrats);
     }
-
+    
+    // get a single strat by id
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Strat))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -43,6 +44,7 @@ public class StratsController : ControllerBase
         return Ok(strat);
     }
 
+    // get map by id
     [HttpGet("maps/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Map))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,6 +63,7 @@ public class StratsController : ControllerBase
         }
     }
     
+    // create and post a strat
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -87,6 +90,7 @@ public class StratsController : ControllerBase
         }
     }
 
+    // delete a strat
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,6 +100,7 @@ public class StratsController : ControllerBase
         return Ok(new { message = "Strategy deleted!" });
     }
 
+    // assign strat to a category
     [HttpPost("assign/strat/{stratId}/category/{categoryId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -111,7 +116,8 @@ public class StratsController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
-
+    
+    // get a single strat in a category
     [HttpGet("category/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -122,7 +128,8 @@ public class StratsController : ControllerBase
             return NotFound(new { message = $"No strats found in category {id}" });
         return Ok(strats);  
     }
-
+    
+    // get a map id by map name
     [HttpGet("maps/byname/{mapName}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

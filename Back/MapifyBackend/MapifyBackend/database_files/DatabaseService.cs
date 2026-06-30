@@ -29,6 +29,7 @@ public class DatabaseService
     {
         SqliteConnection connection = new SqliteConnection(_connectionString);
         connection.Open();
+        connection.Execute("PRAGMA FOREIGN_KEYS = ON;");
         return connection;
     }
 
@@ -53,15 +54,16 @@ public class DatabaseService
     {
         await using SqliteConnection db = GetConnection();
 
-        string sql = @"INSERT INTO strats (name, video_url, map_id)
-                   VALUES (@name, @videoUrl, @mapId);
+        string sql = @"INSERT INTO strats (name, video_url, map_id, description)
+                   VALUES (@name, @videoUrl, @mapId, @description);
                    SELECT last_insert_rowid();";
 
         return await db.QuerySingleAsync<int>(sql, new
         {
             name = strat.Name,
             videoUrl = strat.VideoUrl,
-            mapId = strat.MapId
+            mapId = strat.MapId,
+            description = strat.Description
         });
     }
 
@@ -75,7 +77,7 @@ public class DatabaseService
         using SqliteConnection db = GetConnection();
         
         string sql = @"SELECT id FROM maps WHERE name = @name";
-        return db.QuerySingle<int?>(sql, new { name = mapName });
+        return db.QuerySingleOrDefault<int?>(sql, new { name = mapName });
     }
 
     /// <summary>
@@ -137,6 +139,18 @@ public class DatabaseService
         using SqliteConnection db = GetConnection();
         string sql = "SELECT id, name, side FROM categories WHERE id=@id";
         return db.QuerySingleOrDefault<Category>(sql, new { id = id });
+    }
+
+    /// <summary>
+    /// Retrieves the ID of a category by its unique name.
+    /// </summary>
+    /// <param name="categoryName">The category name.</param>
+    /// <returns>The category ID if found; otherwise, null.</returns>
+    public int? GetCategoryIdByName(string categoryName)
+    {
+        using SqliteConnection db = GetConnection();
+        string sql = "SELECT id FROM categories WHERE name=@name";
+        return db.QuerySingleOrDefault<int?>(sql, new { name = categoryName });
     }
 
     /// <summary>
@@ -208,6 +222,333 @@ public class DatabaseService
         string sql = "SELECT name FROM categories WHERE id=@id";
         return db.QuerySingleOrDefault<string>(sql, new { id = categoryId });
     }
+
+    /// <summary>
+    /// Adds a category proposal to the pending submissions table.
+    /// </summary>
+    /// <param name="submission">The category submission to store for review.</param>
+    /// <returns>The generated pending submission ID.</returns>
+    public int AddPendingCategorySubmission(CategorySubmission submission)
+    {
+        using SqliteConnection db = GetConnection();
+        string sql = """
+                     INSERT INTO pending_category_submissions (name, side)
+                     VALUES (@name, @side);
+                     SELECT last_insert_rowid();
+                     """;
+
+        return db.QuerySingle<int>(sql, new
+        {
+            name = submission.Name,
+            side = submission.Side.ToString()
+        });
+    }
+
+    /// <summary>
+    /// Retrieves all category submissions waiting for admin review.
+    /// </summary>
+    /// <returns>A list of pending category submissions.</returns>
+    public List<CategorySubmission> GetPendingCategorySubmissions()
+    {
+        using SqliteConnection db = GetConnection();
+        string sql = """
+                     SELECT id, name, side, submitted_at AS SubmittedAt
+                     FROM pending_category_submissions
+                     ORDER BY submitted_at ASC, id ASC
+                     """;
+
+        return db.Query<CategorySubmission>(sql).ToList();
+    }
+
+    /// <summary>
+    /// Retrieves a single category submission by ID.
+    /// </summary>
+    /// <param name="id">The pending category submission ID.</param>
+    /// <returns>The pending submission if found; otherwise, null.</returns>
+    public CategorySubmission? GetPendingCategorySubmissionById(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        string sql = """
+                     SELECT id, name, side, submitted_at AS SubmittedAt
+                     FROM pending_category_submissions
+                     WHERE id=@id
+                     """;
+
+        return db.QuerySingleOrDefault<CategorySubmission>(sql, new { id });
+    }
+
+    /// <summary>
+    /// Approves a pending category submission and moves it into the categories table.
+    /// </summary>
+    /// <param name="id">The pending category submission ID.</param>
+    /// <returns>The generated category ID if approved; otherwise, null.</returns>
+    public int? ApprovePendingCategorySubmission(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        using var transaction = db.BeginTransaction();
+
+        CategorySubmission? submission = db.QuerySingleOrDefault<CategorySubmission>(
+            """
+            SELECT id, name, side, submitted_at AS SubmittedAt
+            FROM pending_category_submissions
+            WHERE id=@id
+            """,
+            new { id },
+            transaction);
+
+        if (submission == null)
+        {
+            transaction.Rollback();
+            return null;
+        }
+
+        int categoryId = db.QuerySingle<int>(
+            """
+            INSERT INTO categories (name, side)
+            VALUES (@name, @side);
+            SELECT last_insert_rowid();
+            """,
+            new
+            {
+                name = submission.Name,
+                side = submission.Side.ToString()
+            },
+            transaction);
+
+        db.Execute(
+            "DELETE FROM pending_category_submissions WHERE id=@id",
+            new { id },
+            transaction);
+
+        transaction.Commit();
+        return categoryId;
+    }
+
+    /// <summary>
+    /// Deletes a category submission without approving it.
+    /// </summary>
+    /// <param name="id">The pending category submission ID.</param>
+    /// <returns>True if a row was deleted; otherwise, false.</returns>
+    public bool DeletePendingCategorySubmission(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        int rows = db.Execute("DELETE FROM pending_category_submissions WHERE id=@id", new { id });
+        return rows > 0;
+    }
+
+    /// <summary>
+    /// Adds a strategy proposal and its proposed category/operator assignments.
+    /// </summary>
+    /// <param name="submission">The strategy submission to store for review.</param>
+    /// <returns>The generated pending submission ID.</returns>
+    public int AddPendingStratSubmission(StratSubmission submission)
+    {
+        using SqliteConnection db = GetConnection();
+        using var transaction = db.BeginTransaction();
+
+        int submissionId = db.QuerySingle<int>(
+            """
+            INSERT INTO pending_strat_submissions (name, video_url, map_id, description)
+            VALUES (@name, @videoUrl, @mapId, @description);
+            SELECT last_insert_rowid();
+            """,
+            new
+            {
+                name = submission.Name,
+                videoUrl = submission.VideoUrl,
+                mapId = submission.MapId,
+                description = submission.Description
+            },
+            transaction);
+
+        foreach (int categoryId in submission.CategoryIds.Distinct())
+        {
+            db.Execute(
+                """
+                INSERT INTO pending_strat_submission_categories (submission_id, category_id)
+                VALUES (@submissionId, @categoryId)
+                """,
+                new { submissionId, categoryId },
+                transaction);
+        }
+
+        foreach (int operatorId in submission.OperatorIds.Distinct())
+        {
+            db.Execute(
+                """
+                INSERT INTO pending_strat_submission_operators (submission_id, operator_id)
+                VALUES (@submissionId, @operatorId)
+                """,
+                new { submissionId, operatorId },
+                transaction);
+        }
+
+        transaction.Commit();
+        return submissionId;
+    }
+
+    /// <summary>
+    /// Retrieves all strategy submissions waiting for admin review.
+    /// </summary>
+    /// <returns>A list of pending strategy submissions.</returns>
+    public List<StratSubmission> GetPendingStratSubmissions()
+    {
+        using SqliteConnection db = GetConnection();
+        string sql = """
+                     SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+                     FROM pending_strat_submissions
+                     ORDER BY submitted_at ASC, id ASC
+                     """;
+
+        List<StratSubmission> submissions = db.Query<StratSubmission>(sql).ToList();
+        foreach (StratSubmission submission in submissions)
+        {
+            LoadPendingStratSubmissionRelations(db, submission);
+        }
+
+        return submissions;
+    }
+
+    /// <summary>
+    /// Retrieves a single strategy submission by ID.
+    /// </summary>
+    /// <param name="id">The pending strategy submission ID.</param>
+    /// <returns>The pending submission if found; otherwise, null.</returns>
+    public StratSubmission? GetPendingStratSubmissionById(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        StratSubmission? submission = db.QuerySingleOrDefault<StratSubmission>(
+            """
+            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+            FROM pending_strat_submissions
+            WHERE id=@id
+            """,
+            new { id });
+
+        if (submission == null) return null;
+
+        LoadPendingStratSubmissionRelations(db, submission);
+        return submission;
+    }
+
+    /// <summary>
+    /// Approves a pending strategy submission and moves it into the public strategy tables.
+    /// </summary>
+    /// <param name="id">The pending strategy submission ID.</param>
+    /// <returns>The generated strategy ID if approved; otherwise, null.</returns>
+    public int? ApprovePendingStratSubmission(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        using var transaction = db.BeginTransaction();
+
+        StratSubmission? submission = db.QuerySingleOrDefault<StratSubmission>(
+            """
+            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+            FROM pending_strat_submissions
+            WHERE id=@id
+            """,
+            new { id },
+            transaction);
+
+        if (submission == null)
+        {
+            transaction.Rollback();
+            return null;
+        }
+
+        int stratId = db.QuerySingle<int>(
+            """
+            INSERT INTO strats (name, video_url, map_id, description)
+            VALUES (@name, @videoUrl, @mapId, @description);
+            SELECT last_insert_rowid();
+            """,
+            new
+            {
+                name = submission.Name,
+                videoUrl = submission.VideoUrl,
+                mapId = submission.MapId,
+                description = submission.Description
+            },
+            transaction);
+
+        IEnumerable<int> categoryIds = db.Query<int>(
+            """
+            SELECT category_id
+            FROM pending_strat_submission_categories
+            WHERE submission_id=@id
+            """,
+            new { id },
+            transaction);
+
+        foreach (int categoryId in categoryIds)
+        {
+            db.Execute(
+                """
+                INSERT INTO strat_categories (strat_id, category_id)
+                VALUES (@stratId, @categoryId)
+                """,
+                new { stratId, categoryId },
+                transaction);
+        }
+
+        IEnumerable<int> operatorIds = db.Query<int>(
+            """
+            SELECT operator_id
+            FROM pending_strat_submission_operators
+            WHERE submission_id=@id
+            """,
+            new { id },
+            transaction);
+
+        foreach (int operatorId in operatorIds)
+        {
+            db.Execute(
+                """
+                INSERT INTO strat_operators (strat_id, operator_id)
+                VALUES (@stratId, @operatorId)
+                """,
+                new { stratId, operatorId },
+                transaction);
+        }
+
+        db.Execute("DELETE FROM pending_strat_submissions WHERE id=@id", new { id }, transaction);
+
+        transaction.Commit();
+        return stratId;
+    }
+
+    /// <summary>
+    /// Deletes a strategy submission without approving it.
+    /// </summary>
+    /// <param name="id">The pending strategy submission ID.</param>
+    /// <returns>True if a row was deleted; otherwise, false.</returns>
+    public bool DeletePendingStratSubmission(int id)
+    {
+        using SqliteConnection db = GetConnection();
+        int rows = db.Execute("DELETE FROM pending_strat_submissions WHERE id=@id", new { id });
+        return rows > 0;
+    }
+
+    private static void LoadPendingStratSubmissionRelations(SqliteConnection db, StratSubmission submission)
+    {
+        submission.CategoryIds = db.Query<int>(
+            """
+            SELECT category_id
+            FROM pending_strat_submission_categories
+            WHERE submission_id=@submissionId
+            ORDER BY category_id
+            """,
+            new { submissionId = submission.Id }).ToList();
+
+        submission.OperatorIds = db.Query<int>(
+            """
+            SELECT operator_id
+            FROM pending_strat_submission_operators
+            WHERE submission_id=@submissionId
+            ORDER BY operator_id
+            """,
+            new { submissionId = submission.Id }).ToList();
+    }
     
     /// <summary>
     /// Creates a connection between a strategy and an operator
@@ -250,7 +591,7 @@ public class DatabaseService
         }
         catch (SqliteException)
         {
-            // сюда попадёшь при:
+            // caught upon:
             // - foreign key violation
             // - duplicate (если UNIQUE есть)
             return false;

@@ -43,6 +43,39 @@ CREATE TABLE IF NOT EXISTS strat_operators (
     FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS pending_category_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    side TEXT NOT NULL CHECK(side IN ('Attack', 'Defense')),
+    submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pending_strat_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    video_url TEXT NOT NULL,
+    map_id INT NOT NULL,
+    description TEXT,
+    submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (map_id) REFERENCES maps(id)
+);
+
+CREATE TABLE IF NOT EXISTS pending_strat_submission_categories (
+    submission_id INT NOT NULL,
+    category_id INT NOT NULL,
+    PRIMARY KEY (submission_id, category_id),
+    FOREIGN KEY (submission_id) REFERENCES pending_strat_submissions(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pending_strat_submission_operators (
+    submission_id INT NOT NULL,
+    operator_id INT NOT NULL,
+    PRIMARY KEY (submission_id, operator_id),
+    FOREIGN KEY (submission_id) REFERENCES pending_strat_submissions(id) ON DELETE CASCADE,
+    FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE CASCADE
+);
+
 INSERT OR IGNORE INTO maps(name)
 VALUES ('Oregon'),
        ('Consulate'),
