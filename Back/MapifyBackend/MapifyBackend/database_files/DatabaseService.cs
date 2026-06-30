@@ -34,6 +34,26 @@ public class DatabaseService
     }
 
     /// <summary>
+    /// Checks whether an admin API key hash exists and has not been revoked.
+    /// </summary>
+    /// <param name="keyHash">The SHA-256 hash of the API key.</param>
+    /// <returns>True if the key hash is active; otherwise, false.</returns>
+    public async Task<bool> IsActiveAdminApiKeyHash(string keyHash)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = """
+                     SELECT 1
+                     FROM admin_api_keys
+                     WHERE key_hash=@keyHash
+                       AND revoked_at IS NULL
+                     LIMIT 1
+                     """;
+
+        int? result = await db.QuerySingleOrDefaultAsync<int?>(sql, new { keyHash });
+        return result != null;
+    }
+
+    /// <summary>
     /// Retrieves all strategies from the database.
     /// </summary>
     /// <returns>A list of <see cref="Strat"/> objects.</returns>
@@ -78,6 +98,13 @@ public class DatabaseService
         
         string sql = @"SELECT id FROM maps WHERE name = @name";
         return db.QuerySingleOrDefault<int?>(sql, new { name = mapName });
+    }
+
+    public async Task<int?> GetMapIdByNameAsync(string mapName)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = "SELECT id FROM maps WHERE name = @name";
+        return await db.QuerySingleOrDefaultAsync<int?>(sql, new { name = mapName });
     }
 
     /// <summary>
@@ -141,6 +168,13 @@ public class DatabaseService
         return db.QuerySingleOrDefault<Category>(sql, new { id = id });
     }
 
+    public async Task<Category?> GetCategoryByIdAsync(int id)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = "SELECT id, name, side FROM categories WHERE id=@id";
+        return await db.QuerySingleOrDefaultAsync<Category>(sql, new { id });
+    }
+
     /// <summary>
     /// Retrieves the ID of a category by its unique name.
     /// </summary>
@@ -151,6 +185,13 @@ public class DatabaseService
         using SqliteConnection db = GetConnection();
         string sql = "SELECT id FROM categories WHERE name=@name";
         return db.QuerySingleOrDefault<int?>(sql, new { name = categoryName });
+    }
+
+    public async Task<int?> GetCategoryIdByNameAsync(string categoryName)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = "SELECT id FROM categories WHERE name=@name";
+        return await db.QuerySingleOrDefaultAsync<int?>(sql, new { name = categoryName });
     }
 
     /// <summary>
@@ -228,16 +269,16 @@ public class DatabaseService
     /// </summary>
     /// <param name="submission">The category submission to store for review.</param>
     /// <returns>The generated pending submission ID.</returns>
-    public int AddPendingCategorySubmission(CategorySubmission submission)
+    public async Task<int> AddPendingCategorySubmissionAsync(CategorySubmission submission)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = """
                      INSERT INTO pending_category_submissions (name, side)
                      VALUES (@name, @side);
                      SELECT last_insert_rowid();
                      """;
 
-        return db.QuerySingle<int>(sql, new
+        return await db.QuerySingleAsync<int>(sql, new
         {
             name = submission.Name,
             side = submission.Side.ToString()
@@ -248,16 +289,17 @@ public class DatabaseService
     /// Retrieves all category submissions waiting for admin review.
     /// </summary>
     /// <returns>A list of pending category submissions.</returns>
-    public List<CategorySubmission> GetPendingCategorySubmissions()
+    public async Task<List<CategorySubmission>> GetPendingCategorySubmissionsAsync()
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = """
                      SELECT id, name, side, submitted_at AS SubmittedAt
                      FROM pending_category_submissions
                      ORDER BY submitted_at ASC, id ASC
                      """;
 
-        return db.Query<CategorySubmission>(sql).ToList();
+        var submissions = await db.QueryAsync<CategorySubmission>(sql);
+        return submissions.ToList();
     }
 
     /// <summary>
@@ -265,16 +307,16 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending category submission ID.</param>
     /// <returns>The pending submission if found; otherwise, null.</returns>
-    public CategorySubmission? GetPendingCategorySubmissionById(int id)
+    public async Task<CategorySubmission?> GetPendingCategorySubmissionByIdAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = """
                      SELECT id, name, side, submitted_at AS SubmittedAt
                      FROM pending_category_submissions
                      WHERE id=@id
                      """;
 
-        return db.QuerySingleOrDefault<CategorySubmission>(sql, new { id });
+        return await db.QuerySingleOrDefaultAsync<CategorySubmission>(sql, new { id });
     }
 
     /// <summary>
@@ -282,12 +324,12 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending category submission ID.</param>
     /// <returns>The generated category ID if approved; otherwise, null.</returns>
-    public int? ApprovePendingCategorySubmission(int id)
+    public async Task<int?> ApprovePendingCategorySubmissionAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         using var transaction = db.BeginTransaction();
 
-        CategorySubmission? submission = db.QuerySingleOrDefault<CategorySubmission>(
+        CategorySubmission? submission = await db.QuerySingleOrDefaultAsync<CategorySubmission>(
             """
             SELECT id, name, side, submitted_at AS SubmittedAt
             FROM pending_category_submissions
@@ -302,7 +344,7 @@ public class DatabaseService
             return null;
         }
 
-        int categoryId = db.QuerySingle<int>(
+        int categoryId = await db.QuerySingleAsync<int>(
             """
             INSERT INTO categories (name, side)
             VALUES (@name, @side);
@@ -315,7 +357,7 @@ public class DatabaseService
             },
             transaction);
 
-        db.Execute(
+        await db.ExecuteAsync(
             "DELETE FROM pending_category_submissions WHERE id=@id",
             new { id },
             transaction);
@@ -329,10 +371,10 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending category submission ID.</param>
     /// <returns>True if a row was deleted; otherwise, false.</returns>
-    public bool DeletePendingCategorySubmission(int id)
+    public async Task<bool> DeletePendingCategorySubmissionAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
-        int rows = db.Execute("DELETE FROM pending_category_submissions WHERE id=@id", new { id });
+        await using SqliteConnection db = GetConnection();
+        int rows = await db.ExecuteAsync("DELETE FROM pending_category_submissions WHERE id=@id", new { id });
         return rows > 0;
     }
 
@@ -341,12 +383,12 @@ public class DatabaseService
     /// </summary>
     /// <param name="submission">The strategy submission to store for review.</param>
     /// <returns>The generated pending submission ID.</returns>
-    public int AddPendingStratSubmission(StratSubmission submission)
+    public async Task<int> AddPendingStratSubmissionAsync(StratSubmission submission)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         using var transaction = db.BeginTransaction();
 
-        int submissionId = db.QuerySingle<int>(
+        int submissionId = await db.QuerySingleAsync<int>(
             """
             INSERT INTO pending_strat_submissions (name, video_url, map_id, description)
             VALUES (@name, @videoUrl, @mapId, @description);
@@ -363,7 +405,7 @@ public class DatabaseService
 
         foreach (int categoryId in submission.CategoryIds.Distinct())
         {
-            db.Execute(
+            await db.ExecuteAsync(
                 """
                 INSERT INTO pending_strat_submission_categories (submission_id, category_id)
                 VALUES (@submissionId, @categoryId)
@@ -374,7 +416,7 @@ public class DatabaseService
 
         foreach (int operatorId in submission.OperatorIds.Distinct())
         {
-            db.Execute(
+            await db.ExecuteAsync(
                 """
                 INSERT INTO pending_strat_submission_operators (submission_id, operator_id)
                 VALUES (@submissionId, @operatorId)
@@ -391,19 +433,20 @@ public class DatabaseService
     /// Retrieves all strategy submissions waiting for admin review.
     /// </summary>
     /// <returns>A list of pending strategy submissions.</returns>
-    public List<StratSubmission> GetPendingStratSubmissions()
+    public async Task<List<StratSubmission>> GetPendingStratSubmissionsAsync()
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = """
                      SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
                      FROM pending_strat_submissions
                      ORDER BY submitted_at ASC, id ASC
                      """;
 
-        List<StratSubmission> submissions = db.Query<StratSubmission>(sql).ToList();
+        var result = await db.QueryAsync<StratSubmission>(sql);
+        List<StratSubmission> submissions = result.ToList();
         foreach (StratSubmission submission in submissions)
         {
-            LoadPendingStratSubmissionRelations(db, submission);
+            await LoadPendingStratSubmissionRelationsAsync(db, submission);
         }
 
         return submissions;
@@ -414,10 +457,10 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending strategy submission ID.</param>
     /// <returns>The pending submission if found; otherwise, null.</returns>
-    public StratSubmission? GetPendingStratSubmissionById(int id)
+    public async Task<StratSubmission?> GetPendingStratSubmissionByIdAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
-        StratSubmission? submission = db.QuerySingleOrDefault<StratSubmission>(
+        await using SqliteConnection db = GetConnection();
+        StratSubmission? submission = await db.QuerySingleOrDefaultAsync<StratSubmission>(
             """
             SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
             FROM pending_strat_submissions
@@ -427,7 +470,7 @@ public class DatabaseService
 
         if (submission == null) return null;
 
-        LoadPendingStratSubmissionRelations(db, submission);
+        await LoadPendingStratSubmissionRelationsAsync(db, submission);
         return submission;
     }
 
@@ -436,12 +479,12 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending strategy submission ID.</param>
     /// <returns>The generated strategy ID if approved; otherwise, null.</returns>
-    public int? ApprovePendingStratSubmission(int id)
+    public async Task<int?> ApprovePendingStratSubmissionAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         using var transaction = db.BeginTransaction();
 
-        StratSubmission? submission = db.QuerySingleOrDefault<StratSubmission>(
+        StratSubmission? submission = await db.QuerySingleOrDefaultAsync<StratSubmission>(
             """
             SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
             FROM pending_strat_submissions
@@ -456,7 +499,7 @@ public class DatabaseService
             return null;
         }
 
-        int stratId = db.QuerySingle<int>(
+        int stratId = await db.QuerySingleAsync<int>(
             """
             INSERT INTO strats (name, video_url, map_id, description)
             VALUES (@name, @videoUrl, @mapId, @description);
@@ -471,7 +514,7 @@ public class DatabaseService
             },
             transaction);
 
-        IEnumerable<int> categoryIds = db.Query<int>(
+        IEnumerable<int> categoryIds = await db.QueryAsync<int>(
             """
             SELECT category_id
             FROM pending_strat_submission_categories
@@ -482,7 +525,7 @@ public class DatabaseService
 
         foreach (int categoryId in categoryIds)
         {
-            db.Execute(
+            await db.ExecuteAsync(
                 """
                 INSERT INTO strat_categories (strat_id, category_id)
                 VALUES (@stratId, @categoryId)
@@ -491,7 +534,7 @@ public class DatabaseService
                 transaction);
         }
 
-        IEnumerable<int> operatorIds = db.Query<int>(
+        IEnumerable<int> operatorIds = await db.QueryAsync<int>(
             """
             SELECT operator_id
             FROM pending_strat_submission_operators
@@ -502,7 +545,7 @@ public class DatabaseService
 
         foreach (int operatorId in operatorIds)
         {
-            db.Execute(
+            await db.ExecuteAsync(
                 """
                 INSERT INTO strat_operators (strat_id, operator_id)
                 VALUES (@stratId, @operatorId)
@@ -511,7 +554,7 @@ public class DatabaseService
                 transaction);
         }
 
-        db.Execute("DELETE FROM pending_strat_submissions WHERE id=@id", new { id }, transaction);
+        await db.ExecuteAsync("DELETE FROM pending_strat_submissions WHERE id=@id", new { id }, transaction);
 
         transaction.Commit();
         return stratId;
@@ -522,32 +565,34 @@ public class DatabaseService
     /// </summary>
     /// <param name="id">The pending strategy submission ID.</param>
     /// <returns>True if a row was deleted; otherwise, false.</returns>
-    public bool DeletePendingStratSubmission(int id)
+    public async Task<bool> DeletePendingStratSubmissionAsync(int id)
     {
-        using SqliteConnection db = GetConnection();
-        int rows = db.Execute("DELETE FROM pending_strat_submissions WHERE id=@id", new { id });
+        await using SqliteConnection db = GetConnection();
+        int rows = await db.ExecuteAsync("DELETE FROM pending_strat_submissions WHERE id=@id", new { id });
         return rows > 0;
     }
 
-    private static void LoadPendingStratSubmissionRelations(SqliteConnection db, StratSubmission submission)
+    private static async Task LoadPendingStratSubmissionRelationsAsync(SqliteConnection db, StratSubmission submission)
     {
-        submission.CategoryIds = db.Query<int>(
+        var categoryIds = await db.QueryAsync<int>(
             """
             SELECT category_id
             FROM pending_strat_submission_categories
             WHERE submission_id=@submissionId
             ORDER BY category_id
             """,
-            new { submissionId = submission.Id }).ToList();
+            new { submissionId = submission.Id });
+        submission.CategoryIds = categoryIds.ToList();
 
-        submission.OperatorIds = db.Query<int>(
+        var operatorIds = await db.QueryAsync<int>(
             """
             SELECT operator_id
             FROM pending_strat_submission_operators
             WHERE submission_id=@submissionId
             ORDER BY operator_id
             """,
-            new { submissionId = submission.Id }).ToList();
+            new { submissionId = submission.Id });
+        submission.OperatorIds = operatorIds.ToList();
     }
     
     /// <summary>
@@ -682,6 +727,22 @@ public class DatabaseService
                      """;
     
         return db.QuerySingleOrDefault<Operator>(
+            sql,
+            new { id = operatorId }
+        );
+    }
+
+    public async Task<Operator?> GetOperatorByIdAsync(int operatorId)
+    {
+        await using SqliteConnection db = GetConnection();
+    
+        string sql = """
+                     SELECT id, name, side
+                     FROM operators
+                     WHERE id=@id
+                     """;
+    
+        return await db.QuerySingleOrDefaultAsync<Operator>(
             sql,
             new { id = operatorId }
         );

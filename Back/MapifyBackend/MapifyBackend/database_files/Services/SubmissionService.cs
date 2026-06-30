@@ -12,23 +12,23 @@ public class SubmissionService
         _db = db;
     }
 
-    public int SubmitStrat(StratSubmissionRequest request)
+    public async Task<int> SubmitStrat(StratSubmissionRequest request)
     {
-        int? mapId = _db.GetMapIdByName(request.MapName);
+        int? mapId = await _db.GetMapIdByNameAsync(request.MapName);
         if (mapId == null)
             throw new ArgumentException($"Map '{request.MapName}' does not exist");
 
         List<int> categoryIds = request.CategoryIds.Distinct().ToList();
         foreach (int categoryId in categoryIds)
         {
-            if (_db.GetCategoryById(categoryId) == null)
+            if (await _db.GetCategoryByIdAsync(categoryId) == null)
                 throw new ArgumentException($"Category by id {categoryId} does not exist");
         }
 
         List<int> operatorIds = request.OperatorIds.Distinct().ToList();
         foreach (int operatorId in operatorIds)
         {
-            if (_db.GetOperatorById(operatorId) == null)
+            if (await _db.GetOperatorByIdAsync(operatorId) == null)
                 throw new ArgumentException($"Operator by id {operatorId} does not exist");
         }
 
@@ -40,56 +40,56 @@ public class SubmissionService
             categoryIds,
             operatorIds);
 
-        return _db.AddPendingStratSubmission(submission);
+        return await _db.AddPendingStratSubmissionAsync(submission);
     }
 
-    public int SubmitCategory(CategorySubmissionRequest request)
+    public async Task<int> SubmitCategory(CategorySubmissionRequest request)
     {
-        if (_db.GetCategoryIdByName(request.Name) != null)
+        if (await _db.GetCategoryIdByNameAsync(request.Name) != null)
             throw new InvalidOperationException($"Category '{request.Name}' already exists");
 
         Side side = Enum.Parse<Side>(request.Side);
         CategorySubmission submission = new CategorySubmission(request.Name, side);
-        return _db.AddPendingCategorySubmission(submission);
+        return await _db.AddPendingCategorySubmissionAsync(submission);
     }
 
-    public List<StratSubmission> GetPendingStratSubmissions()
+    public async Task<List<StratSubmission>> GetPendingStratSubmissions()
     {
-        return _db.GetPendingStratSubmissions();
+        return await _db.GetPendingStratSubmissionsAsync();
     }
 
-    public StratSubmission? GetPendingStratSubmission(int id)
+    public async Task<StratSubmission?> GetPendingStratSubmission(int id)
     {
-        return _db.GetPendingStratSubmissionById(id);
+        return await _db.GetPendingStratSubmissionByIdAsync(id);
     }
 
-    public int? ApproveStratSubmission(int id)
+    public async Task<int?> ApproveStratSubmission(int id)
     {
-        return _db.ApprovePendingStratSubmission(id);
+        return await _db.ApprovePendingStratSubmissionAsync(id);
     }
 
-    public bool RejectStratSubmission(int id)
+    public async Task<bool> RejectStratSubmission(int id)
     {
-        return _db.DeletePendingStratSubmission(id);
+        return await _db.DeletePendingStratSubmissionAsync(id);
     }
 
-    public List<CategorySubmission> GetPendingCategorySubmissions()
+    public async Task<List<CategorySubmission>> GetPendingCategorySubmissions()
     {
-        return _db.GetPendingCategorySubmissions();
+        return await _db.GetPendingCategorySubmissionsAsync();
     }
 
-    public CategorySubmission? GetPendingCategorySubmission(int id)
+    public async Task<CategorySubmission?> GetPendingCategorySubmission(int id)
     {
-        return _db.GetPendingCategorySubmissionById(id);
+        return await _db.GetPendingCategorySubmissionByIdAsync(id);
     }
 
-    public int? ApproveCategorySubmission(int id)
+    public async Task<int?> ApproveCategorySubmission(int id)
     {
-        return _db.ApprovePendingCategorySubmission(id);
+        return await _db.ApprovePendingCategorySubmissionAsync(id);
     }
 
-    public bool RejectCategorySubmission(int id)
+    public async Task<bool> RejectCategorySubmission(int id)
     {
-        return _db.DeletePendingCategorySubmission(id);
+        return await _db.DeletePendingCategorySubmissionAsync(id);
     }
 }

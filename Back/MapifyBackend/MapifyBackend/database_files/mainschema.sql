@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS strat_operators (
     FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS admin_api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    key_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS pending_category_submissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
