@@ -121,12 +121,36 @@ public class StratsController : ControllerBase
     [HttpGet("category/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetStratsByCategory(int id)
+    public async Task<IActionResult> GetStratsByCategory(int id)
     {
-        var strats = _stratService.GetStratsByCategory(id);
+        var strats =  await _stratService.GetStratsByCategory(id);
         if (strats == null || strats.Count == 0) 
             return NotFound(new { message = $"No strats found in category {id}" });
         return Ok(strats);  
+    }
+    
+    // get strats by map id
+    [HttpGet("bymap/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStratsByMap(int id)
+    {
+        var strats = await _stratService.GetStratsByMapId(id);
+        if (strats == null || strats.Count == 0) 
+            return NotFound(new { message = $"No strats found in map {id}" });
+        return Ok(strats);  
+    }
+    
+    //Get strats by operator id
+    [HttpGet("byoperator/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Strat>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStratsByOperator(int id)
+    {
+        var strats = await _stratService.GetStratsByOperatorId(id);
+        if (strats == null || strats.Count == 0) 
+            return NotFound(new { message = $"No strats found by operator {id}" });
+        return Ok(strats); 
     }
     
     // get a map id by map name

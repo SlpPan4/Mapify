@@ -133,7 +133,9 @@ VALUES ('Rush', 'Attack'),
        ('Power Position Hold', 'Defense'),
        ('Deep roam', 'Defense'),
        ('Soft roam', 'Defense'),
-       ('Anchoring', 'Defense');
+       ('Anchoring', 'Defense'),
+       ('Defense', 'Defense'),
+       ('Attack', 'Attack');
        
 INSERT OR IGNORE INTO strat_categories(strat_id, category_id)
 VALUES (1, 1),

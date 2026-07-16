@@ -104,12 +104,22 @@ public class StratService
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     /// <returns>A list of <see cref="Strat"/> objects if the category exists; otherwise, null.</returns>
-    public List<Strat>? GetStratsByCategory(int categoryId)
+    public async Task<List<Strat>?> GetStratsByCategory(int categoryId)
     {
         if (_dbService.GetCategoryById(categoryId) == null)
         {
             return null;
         }
-        return _dbService.GetStratsByCategory(categoryId);
+        return await _dbService.GetStratsByCategory(categoryId);
+    }
+
+    public async Task<List<Strat>?> GetStratsByMapId(int mapId)
+    {
+        return await _dbService.StratsByMapId(mapId);
+    }
+
+    public async Task<List<Strat>?> GetStratsByOperatorId(int operatorId)
+    {
+        return await _dbService.StratsByOperator(operatorId);
     }
 }
