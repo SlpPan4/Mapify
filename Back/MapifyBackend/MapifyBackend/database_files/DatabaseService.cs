@@ -68,6 +68,32 @@ public class DatabaseService
     }
 
     /// <summary>
+    /// Retrieves all strats by an operator from the database
+    /// </summary>
+    /// <param name="operatorId"></param>
+    /// <returns>A task with a list of Strat objects</returns>
+    public async Task<List<Strat>?> StratsByOperator(int operatorId)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = @"SELECT * FROM strats JOIN strat_operators ON strats.id = strat_operators.strat_id WHERE strat_operators.operator_id = @operatorId";
+        var result = await db.QueryAsync<Strat>(sql, new { operatorId });
+        return result.ToList();
+    }
+
+    /// <summary>
+    /// Retrieves all strats by a map from the database
+    /// </summary>
+    /// <param name="mapId"></param>
+    /// <returns>A task with a list of Strat objects</returns>
+    public async Task<List<Strat>?> StratsByMapId(int mapId)
+    {
+        await using SqliteConnection db = GetConnection();
+        string sql = @"SELECT * FROM strats WHERE map_id = @mapId";
+        var result = await db.QueryAsync<Strat>(sql, new { mapId });
+        return result.ToList();
+    }
+
+    /// <summary>
     /// Retrieves the ID of a map by its unique name.
     /// </summary>
     /// <param name="mapName">The name of the map.</param>
@@ -201,9 +227,9 @@ public class DatabaseService
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     /// <returns>A list of <see cref="Strat"/> objects belonging to the category.</returns>
-    public List<Strat>? GetStratsByCategory(int categoryId)
+    public async Task<List<Strat>?> GetStratsByCategory(int categoryId)
     {
-        using SqliteConnection db = GetConnection();
+        await using SqliteConnection db = GetConnection();
         string sql = "SELECT s.id, s.name, s.video_url AS videoUrl, s.map_id AS mapId, s.description " +
                      "FROM strats s " +
                      "JOIN strat_categories sc ON s.id = sc.strat_id " +
