@@ -75,7 +75,10 @@ public class DatabaseService
     public async Task<List<Strat>?> StratsByOperator(int operatorId)
     {
         await using SqliteConnection db = GetConnection();
-        string sql = @"SELECT * FROM strats JOIN strat_operators ON strats.id = strat_operators.strat_id WHERE strat_operators.operator_id = @operatorId";
+        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description 
+                        FROM strats
+                        JOIN strat_operators ON strats.id = strat_operators.strat_id 
+                        WHERE strat_operators.operator_id = @operatorId";
         var result = await db.QueryAsync<Strat>(sql, new { operatorId });
         return result.ToList();
     }
@@ -88,7 +91,7 @@ public class DatabaseService
     public async Task<List<Strat>?> StratsByMapId(int mapId)
     {
         await using SqliteConnection db = GetConnection();
-        string sql = @"SELECT * FROM strats WHERE map_id = @mapId";
+        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description FROM strats WHERE map_id = @mapId";
         var result = await db.QueryAsync<Strat>(sql, new { mapId });
         return result.ToList();
     }
