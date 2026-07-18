@@ -7,7 +7,7 @@ from telegram.ext import (ApplicationBuilder, CommandHandler,
 # from telegram_inline_keyboard_builder import InlineKeyboardBuilder
 import httpx
 
-TOKEN = "8593159452:AAGOQg2uUfnw9dFJ7TZmwoxaR56i6L7U4WE"
+TOKEN = 'HUISOS' 
 BOT_USERNAME = "@mapifyy_bot"
 URL = "http://localhost:5000/api/"
 
@@ -19,7 +19,7 @@ all_maps = ["calypso","border","kafe","chalet","clubhouse",
 
 
 
-WAITING_FOR_MAP_NAME, WAITING_FOR_STRAT_NUMBER, WAITING_START = range(3)
+WAITING_FOR_MAP_NAME, WAITING_FOR_OPERATOR, WAITING_START = range(3)
 
 
 # inline keyboard (no logic yet)
@@ -121,12 +121,16 @@ async def handle_strat_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     print(user_input)
     
+
+    
     if user_input == "cancel":
         return await cancel_command(update,context)
 
     if user_input in all_maps:
         print("map in the list")
-        return await get_strat(update,user_input, context)
+
+        context.user_data["map_name"] = user_input
+        return await get_operator(update, context)
     
     
     await update.message.reply_text("Provide a valid map name")
@@ -134,29 +138,28 @@ async def handle_strat_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 
-async def get_strat(update, map_name: str, context: ContextTypes.DEFAULT_TYPE):
+async def get_operator(update, context: ContextTypes.DEFAULT_TYPE):
 
     async with httpx.AsyncClient(timeout=10) as client:
-        # get map id
-        m = await client.get(URL+"strats/maps/byname/"+map_name)
-        map_id = m.json()
-        
-        # get all strats
-        r = await client.get(URL+"strats")
-        response = r.json()  
-    
+       
+        o = await client.get(URL+"operators")
+        operators = o.json()
+
+
+
+
     items_keyboard = [[]]
-    matching_items = [item for item in response if item.get("mapId") == map_id]
+   
+    matching_items = [item.get("name") for item in operators]
 
     for i in range(len(matching_items)):
-        items_keyboard[0].append(str(i+1))
+        items_keyboard[0].append(matching_items[i])
+    
 
 
-    context.user_data["matching_strats"] = matching_items
-    context.user_data["map_name"] = map_name
-
+    context.user_data["operator"] = matching_items
     await update.message.reply_text(
-        f"choose the strat number: from 1 to {len(matching_items)}",
+        f"pick operator",
         reply_markup=ReplyKeyboardMarkup(
             items_keyboard, 
             one_time_keyboard=True,
@@ -167,31 +170,42 @@ async def get_strat(update, map_name: str, context: ContextTypes.DEFAULT_TYPE):
     
     items_keyboard[0] = []
     
-    return WAITING_FOR_STRAT_NUMBER
+    return WAITING_FOR_OPERATOR
 
 
 
-async def handle_strat_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_input = update.message.text.strip()
-    matching_items = context.user_data.get("matching_strats")
+async def handle_operator(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    operator_name = update.message.text.strip()
+    # operator = context.user_data.get("operator")
     map_name = context.user_data.get("map_name")
 
+    print(map_name)
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        # get map id
+        m = await client.get(URL+"strats/maps/byname/"+map_name)
+        map_id = m.json()
+      
+        o = await client.get(URL+"operators")
+        all_operators = o.json()
+
+    operator_id = [item.get("id") for item in all_operators if item.get("name") == operator_name]
+
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        s = await client.get(URL+"strats/byoperator/"+str(operator_id[0]))
+        strat = s.json()
+    
+    strategy = strat[0]
+
     try:
-        strat_number = int(user_input)
 
-        if not matching_items or strat_number < 1:
-            raise ValueError
-        
-        strat = matching_items[strat_number-1]
-        
-        
-        
         message = f"""
-    📌 <b>{strat['name']}</b>
+    📌 <b>{strategy['name']}</b>
 
-    {strat['description'] or 'No description available.'}
+    {strategy['description'] or 'No description available.'}
 
-    🔗 Video: {strat['videoUrl']}
+    🔗 Video: {strategy['videoUrl']}
     🗺️ Map Name: {map_name}
             """.strip()
 
@@ -200,7 +214,11 @@ async def handle_strat_number(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     except ValueError:
         await update.message.reply_text("Please select a number between 1 and {len(matching_items)}")
-        return WAITING_FOR_STRAT_NUMBER
+
+
+
+        return WAITING_FOR_OPERATOR
+
     
     context.user_data.clear()
 
@@ -241,9 +259,9 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, 
                                handle_strat_input)
             ],
-            WAITING_FOR_STRAT_NUMBER: [
+            WAITING_FOR_OPERATOR: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, 
-                               handle_strat_number)
+                               handle_operator)
             ]
         },
         fallbacks=[CommandHandler("cancel", cancel_command)]
