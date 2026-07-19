@@ -2,12 +2,12 @@ namespace MapifyBackend.database_files;
 
 public class StratSubmission
 {
-    public int Id { get; private set; }
-    public string Name { get; private set; }
-    public string VideoUrl { get; private set; }
-    public int MapId { get; private set; }
-    public string? Description { get; private set; }
-    public DateTime SubmittedAt { get; private set; }
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string VideoUrl { get; set; } = null!;
+    public int MapId { get; set; }
+    public string? Description { get; set; }
+    public DateTime SubmittedAt { get; set; }
     public List<int> CategoryIds { get; set; } = [];
     public List<int> OperatorIds { get; set; } = [];
 

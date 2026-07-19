@@ -1,12 +1,12 @@
-﻿using MapifyBackend.Utility.Enums;
+using MapifyBackend.Utility.Enums;
 
 namespace MapifyBackend.database_files;
 
 public class Category
 {
-    public int Id { get; private set; }
-    public string Name { get; private set; }
-    public Side Side { get; private set; }
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public Side Side { get; set; }
 
     public Category()
     {

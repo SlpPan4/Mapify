@@ -25,9 +25,9 @@ public class OperatorsController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Operator>>))]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var operators = _service.GetAllOperators();
+        var operators = await _service.GetAllOperators();
         return Ok(ApiResponse.Success(operators));
     }
 
@@ -37,9 +37,9 @@ public class OperatorsController : ControllerBase
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Operator>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var op = _service.GetOperatorById(id);
+        var op = await _service.GetOperatorById(id);
 
         if (op == null)
             return NotFound(ApiResponse.NotFound("Operator not found"));
@@ -53,9 +53,9 @@ public class OperatorsController : ControllerBase
     [HttpGet("by-name/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetIdByName(string name)
+    public async Task<IActionResult> GetIdByName(string name)
     {
-        var id = _service.GetOperatorIdByName(name);
+        var id = await _service.GetOperatorIdByName(name);
 
         if (id == null)
             return NotFound(ApiResponse.NotFound("Operator not found"));
@@ -69,9 +69,9 @@ public class OperatorsController : ControllerBase
     [HttpPost("{operatorId:int}/assign/{stratId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult AssignToStrat(int operatorId, int stratId)
+    public async Task<IActionResult> AssignToStrat(int operatorId, int stratId)
     {
-        var result = _service.AssignOperatorToStrat(stratId, operatorId);
+        var result = await _service.AssignOperatorToStrat(stratId, operatorId);
 
         if (!result)
             return BadRequest(ApiResponse.BadRequest("Could not assign operator to strategy"));
@@ -85,9 +85,9 @@ public class OperatorsController : ControllerBase
     [HttpDelete("{operatorId:int}/remove/{stratId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult RemoveFromStrat(int operatorId, int stratId)
+    public async Task<IActionResult> RemoveFromStrat(int operatorId, int stratId)
     {
-        var result = _service.RemoveOperatorFromStrat(stratId, operatorId);
+        var result = await _service.RemoveOperatorFromStrat(stratId, operatorId);
 
         if (!result)
             return NotFound(ApiResponse.NotFound("Relation not found"));

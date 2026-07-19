@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 using Dapper;
 
@@ -11,12 +10,17 @@ public class DatabaseInitializer
 
     public static void EnsureDatabaseCreated()
     {
-        // if (File.Exists(DbFileName)) return;
+        EnsureDatabaseCreated(ConnectionString);
+    }
+
+    public static void EnsureDatabaseCreated(string connectionString)
+    {
         try
         {
-
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
+            connection.Execute("PRAGMA FOREIGN_KEYS = ON;");
+
             var path = Path.Combine(AppContext.BaseDirectory, "database_files", "mainschema.sql");
             string script = File.ReadAllText(path);
 
@@ -28,7 +32,12 @@ public class DatabaseInitializer
         catch (Exception e)
         {
             Console.WriteLine($"DB CREATION FAILED: {e.Message}");
-            if (File.Exists(DbFileName)) File.Delete(DbFileName);
+            if (connectionString.StartsWith("Data Source="))
+            {
+                var fileName = connectionString["Data Source=".Length..];
+                if (fileName != ":memory:" && File.Exists(fileName))
+                    File.Delete(fileName);
+            }
         }
     }
 }

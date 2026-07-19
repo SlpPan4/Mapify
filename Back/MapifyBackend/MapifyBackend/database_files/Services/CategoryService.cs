@@ -1,4 +1,4 @@
-﻿using MapifyBackend.Utility.Enums;
+using MapifyBackend.Utility.Enums;
 
 namespace MapifyBackend.database_files;
 
@@ -10,32 +10,33 @@ public class CategoryService
     {
         _db = db;
     }
-    public Category? GetCategoryById(int id)
+
+    public async Task<Category?> GetCategoryById(int id)
     {
-        return _db.GetCategoryById(id);
+        return await _db.GetCategoryById(id);
     }
 
-    public List<Category> GetAllCategories()
+    public async Task<List<Category>> GetAllCategories()
     {
-        return _db.GetAllCategories();
+        return await _db.GetAllCategories();
     }
-    
-    public void AddCategory(string name, Side side)
+
+    public async Task<int> AddCategory(string name, Side side)
     {
         Category category = new Category(name, side);
-        _db.AddCategory(category);
+        return await _db.AddCategory(category);
     }
 
-    public bool DeleteCategory(int id)
+    public async Task<bool> DeleteCategory(int id)
     {
-        if (GetCategoryById(id) == null) return false;
-        
-        _db.DeleteCategory(id);
+        if (await GetCategoryById(id) == null) return false;
+
+        await _db.DeleteCategory(id);
         return true;
     }
 
-    public string? GetCategoryNameById(int id)
+    public async Task<string?> GetCategoryNameById(int id)
     {
-        return _db.GetCategoryNameById(id);
+        return await _db.GetCategoryNameById(id);
     }
 }

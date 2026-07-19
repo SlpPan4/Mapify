@@ -60,11 +60,11 @@ public class StratsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Map>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetMapById(int id)
+    public async Task<IActionResult> GetMapById(int id)
     {
         try
         {
-            Map? map = _db.GetMapById(id);
+            Map? map = await _db.GetMapById(id);
             if (map == null)
                 return NotFound(ApiResponse.NotFound($"Map by id {id} not found"));
 
@@ -111,9 +111,9 @@ public class StratsController : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult DeleteStrat(int id)
+    public async Task<IActionResult> DeleteStrat(int id)
     {
-        if (!_stratService.DeleteStrat(id))
+        if (!await _stratService.DeleteStrat(id))
             return NotFound(ApiResponse.NotFound($"Strat by ID {id} was not found"));
 
         return Ok(ApiResponse.SuccessMessage("Strategy deleted!"));
@@ -125,11 +125,11 @@ public class StratsController : ControllerBase
     [HttpPost("assign/strat/{stratId}/category/{categoryId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult AssignStratToCategory(int stratId, int categoryId)
+    public async Task<IActionResult> AssignStratToCategory(int stratId, int categoryId)
     {
         try
         {
-            _stratService.AssignStratToCategory(stratId, categoryId);
+            await _stratService.AssignStratToCategory(stratId, categoryId);
             return Ok(ApiResponse.SuccessMessage("Strat assigned"));
         }
         catch (Exception ex)
@@ -190,17 +190,16 @@ public class StratsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<int>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetMapIdByName(string mapName)
+    public async Task<IActionResult> GetMapIdByName(string mapName)
     {
         var normalizedMapName = Capitalize(mapName);
         try
         {
-            int? mapId = _stratService.GetMapIdByName(normalizedMapName);
-            return Ok(ApiResponse.Success(mapId!.Value));
-        }
-        catch (ArgumentException)
-        {
-            return NotFound(ApiResponse.NotFound($"No maps found with such name {normalizedMapName}"));
+            int? mapId = await _stratService.GetMapIdByName(normalizedMapName);
+            if (mapId == null)
+                return NotFound(ApiResponse.NotFound($"No maps found with such name {normalizedMapName}"));
+
+            return Ok(ApiResponse.Success(mapId.Value));
         }
         catch (Exception e)
         {

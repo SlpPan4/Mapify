@@ -1,4 +1,4 @@
-﻿namespace MapifyBackend.database_files;
+namespace MapifyBackend.database_files;
 
 /// <summary>
 /// Service layer for managing strategies (strats) and their relations.
@@ -16,7 +16,7 @@ public class StratService
     {
         _dbService = databaseService;
     }
-    
+
     /// <summary>
     /// Creates a new strategy and saves it to the database.
     /// </summary>
@@ -26,7 +26,7 @@ public class StratService
     /// <throws cref="ArgumentException">Thrown when the specified map name does not exist in the database.</throws>
     public async Task<int> CreateStrat(string name, string videoUrl, string mapName)
     {
-        int? mapId = GetMapIdByName(mapName);
+        int? mapId = await GetMapIdByName(mapName);
 
         if (mapId == null)
             throw new ArgumentException($"Map '{mapName}' does not exist");
@@ -40,9 +40,9 @@ public class StratService
     /// </summary>
     /// <param name="mapName">The name of the map to search for.</param>
     /// <returns>The map ID if found; otherwise, null.</returns>
-    public int? GetMapIdByName(string mapName)
+    public async Task<int?> GetMapIdByName(string mapName)
     {
-        return _dbService.GetMapIdByName(mapName);
+        return await _dbService.GetMapIdByName(mapName);
     }
 
     /// <summary>
@@ -69,12 +69,12 @@ public class StratService
     /// </summary>
     /// <param name="id">The ID of the strategy to delete.</param>
     /// <returns>True if the strategy was found and successfully deleted; otherwise, false.</returns>
-    public bool DeleteStrat(int id)
+    public async Task<bool> DeleteStrat(int id)
     {
-        var strat = GetStrat(id);
+        var strat = await GetStrat(id);
         if (strat == null) return false;
 
-        _dbService.DeleteStrat(id);
+        await _dbService.DeleteStrat(id);
         return true;
     }
 
@@ -84,19 +84,19 @@ public class StratService
     /// <param name="stratId">The ID of the strategy.</param>
     /// <param name="categoryId">The ID of the category.</param>
     /// <throws cref="ArgumentException">Thrown when either the strategy ID or the category ID is invalid.</throws>
-    public void AssignStratToCategory(int stratId, int categoryId)
+    public async Task AssignStratToCategory(int stratId, int categoryId)
     {
-        if (_dbService.GetStratById(stratId) == null)
+        if (await _dbService.GetStratById(stratId) == null)
         {
             throw new ArgumentException($"No strat by id {stratId}");
         }
 
-        if (_dbService.GetCategoryById(categoryId) == null)
+        if (await _dbService.GetCategoryById(categoryId) == null)
         {
             throw new ArgumentException($"No category by id {categoryId}");
         }
-        
-        _dbService.AssignStratToCategory(stratId, categoryId);
+
+        await _dbService.AssignStratToCategory(stratId, categoryId);
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public class StratService
     /// <returns>A list of <see cref="Strat"/> objects if the category exists; otherwise, null.</returns>
     public async Task<List<Strat>?> GetStratsByCategory(int categoryId)
     {
-        if (_dbService.GetCategoryById(categoryId) == null)
+        if (await _dbService.GetCategoryById(categoryId) == null)
         {
             return null;
         }

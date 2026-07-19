@@ -30,9 +30,9 @@ public class CategoriesController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Category>>))]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var allCategories = _categoryService.GetAllCategories();
+        var allCategories = await _categoryService.GetAllCategories();
         return Ok(ApiResponse.Success(allCategories));
     }
 
@@ -42,9 +42,9 @@ public class CategoriesController : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Category>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        Category? category = _categoryService.GetCategoryById(id);
+        Category? category = await _categoryService.GetCategoryById(id);
         if (category == null)
         {
             return NotFound(ApiResponse.NotFound($"Category by ID {id} was not found"));
@@ -59,13 +59,13 @@ public class CategoriesController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult Create([FromBody] CategoryRequest request)
+    public async Task<IActionResult> Create([FromBody] CategoryRequest request)
     {
         try
         {
             InputValidator.ValidateCategoryRequest(request);
             Side side = Enum.Parse<Side>(request.Side);
-            _categoryService.AddCategory(request.Name, side);
+            await _categoryService.AddCategory(request.Name, side);
             return Ok(ApiResponse.SuccessMessage("Category added"));
         }
         catch (ValidationException ex)
@@ -84,9 +84,9 @@ public class CategoriesController : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        if (!_categoryService.DeleteCategory(id))
+        if (!await _categoryService.DeleteCategory(id))
             return NotFound(ApiResponse.NotFound($"Category by id {id} was not found"));
 
         return Ok(ApiResponse.SuccessMessage("Category deleted"));
@@ -98,9 +98,9 @@ public class CategoriesController : ControllerBase
     [HttpGet("category_name/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetName(int id)
+    public async Task<IActionResult> GetName(int id)
     {
-        string? name = _categoryService.GetCategoryNameById(id);
+        string? name = await _categoryService.GetCategoryNameById(id);
         if (name == null)
             return NotFound(ApiResponse.NotFound($"Category by id {id} was not found"));
 

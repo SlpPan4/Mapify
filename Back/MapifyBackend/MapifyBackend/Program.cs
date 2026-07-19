@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using MapifyBackend.database_files;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,3 +33,5 @@ app.MapControllers(); // Connects URL with controllers
 
 // Run server
 app.Run();
+
+public partial class Program { }

@@ -1,4 +1,4 @@
-﻿namespace MapifyBackend.database_files;
+namespace MapifyBackend.database_files;
 
 public class OperatorService
 {
@@ -9,14 +9,14 @@ public class OperatorService
         _db = db;
     }
 
-    public Operator? GetOperatorById(int id)
-        => _db.GetOperatorById(id);
+    public async Task<Operator?> GetOperatorById(int id)
+        => await _db.GetOperatorById(id);
 
-    public List<Operator> GetAllOperators()
-        => _db.GetAllOperators();
+    public async Task<List<Operator>> GetAllOperators()
+        => await _db.GetAllOperators();
 
-    public int? GetOperatorIdByName(string name)
-        => _db.GetOperatorIdByName(name);
+    public async Task<int?> GetOperatorIdByName(string name)
+        => await _db.GetOperatorIdByName(name);
 
     /// <summary>
     /// Assigns an operator to a strategy.
@@ -25,26 +25,26 @@ public class OperatorService
     /// - relation already exists
     /// - database constraint fails
     /// </summary>
-    public bool AssignOperatorToStrat(int stratId, int operatorId)
+    public async Task<bool> AssignOperatorToStrat(int stratId, int operatorId)
     {
         // 1. base check for existence of the operator
-        if (_db.GetOperatorById(operatorId) == null)
+        if (await _db.GetOperatorById(operatorId) == null)
             return false;
 
         // 2. protection from duplicates
-        if (_db.IsOperatorAssignedToStrat(stratId, operatorId))
+        if (await _db.IsOperatorAssignedToStrat(stratId, operatorId))
             return false;
 
         // 3. insertion attempt
-        return _db.AssignOperatorToStrat(stratId, operatorId);
+        return await _db.AssignOperatorToStrat(stratId, operatorId);
     }
 
     /// <summary>
     /// Removes operator from strategy.
     /// Returns true if relation existed and was removed.
     /// </summary>
-    public bool RemoveOperatorFromStrat(int stratId, int operatorId)
+    public async Task<bool> RemoveOperatorFromStrat(int stratId, int operatorId)
     {
-        return _db.RemoveOperatorFromStrat(stratId, operatorId);
+        return await _db.RemoveOperatorFromStrat(stratId, operatorId);
     }
 }

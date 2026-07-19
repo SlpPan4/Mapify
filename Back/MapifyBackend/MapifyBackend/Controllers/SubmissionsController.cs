@@ -29,12 +29,12 @@ public class SubmissionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult SubmitStrat([FromBody] StratSubmissionRequest request)
+    public async Task<IActionResult> SubmitStrat([FromBody] StratSubmissionRequest request)
     {
         try
         {
             InputValidator.ValidateStratSubmissionRequest(request);
-            int submissionId = _submissionService.SubmitStrat(request);
+            int submissionId = await _submissionService.SubmitStrat(request);
             return Ok(ApiResponse.Success(new { submissionId }, "Strategy submitted for approval"));
         }
         catch (ValidationException ex)
@@ -57,12 +57,12 @@ public class SubmissionsController : ControllerBase
     [HttpPost("categories")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult SubmitCategory([FromBody] CategorySubmissionRequest request)
+    public async Task<IActionResult> SubmitCategory([FromBody] CategorySubmissionRequest request)
     {
         try
         {
             InputValidator.ValidateCategorySubmissionRequest(request);
-            int submissionId = _submissionService.SubmitCategory(request);
+            int submissionId = await _submissionService.SubmitCategory(request);
             return Ok(ApiResponse.Success(new { submissionId }, "Category submitted for approval"));
         }
         catch (ValidationException ex)
@@ -85,9 +85,9 @@ public class SubmissionsController : ControllerBase
     /// </summary>
     [HttpGet("admin/strats")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StratSubmission>>))]
-    public IActionResult GetPendingStrats()
+    public async Task<IActionResult> GetPendingStrats()
     {
-        return Ok(ApiResponse.Success(_submissionService.GetPendingStratSubmissions()));
+        return Ok(ApiResponse.Success(await _submissionService.GetPendingStratSubmissions()));
     }
 
     /// <summary>
@@ -97,9 +97,9 @@ public class SubmissionsController : ControllerBase
     [HttpGet("admin/strats/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StratSubmission>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetPendingStrat(int id)
+    public async Task<IActionResult> GetPendingStrat(int id)
     {
-        StratSubmission? submission = _submissionService.GetPendingStratSubmission(id);
+        StratSubmission? submission = await _submissionService.GetPendingStratSubmission(id);
         if (submission == null)
             return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
@@ -114,11 +114,11 @@ public class SubmissionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult ApproveStrat(int id)
+    public async Task<IActionResult> ApproveStrat(int id)
     {
         try
         {
-            int? stratId = _submissionService.ApproveStratSubmission(id);
+            int? stratId = await _submissionService.ApproveStratSubmission(id);
             if (stratId == null)
                 return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
@@ -137,9 +137,9 @@ public class SubmissionsController : ControllerBase
     [HttpDelete("admin/strats/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult RejectStrat(int id)
+    public async Task<IActionResult> RejectStrat(int id)
     {
-        if (!_submissionService.RejectStratSubmission(id))
+        if (!await _submissionService.RejectStratSubmission(id))
             return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
         return Ok(ApiResponse.SuccessMessage("Strategy submission rejected"));
@@ -151,9 +151,9 @@ public class SubmissionsController : ControllerBase
     /// </summary>
     [HttpGet("admin/categories")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CategorySubmission>>))]
-    public IActionResult GetPendingCategories()
+    public async Task<IActionResult> GetPendingCategories()
     {
-        return Ok(ApiResponse.Success(_submissionService.GetPendingCategorySubmissions()));
+        return Ok(ApiResponse.Success(await _submissionService.GetPendingCategorySubmissions()));
     }
 
     /// <summary>
@@ -163,9 +163,9 @@ public class SubmissionsController : ControllerBase
     [HttpGet("admin/categories/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CategorySubmission>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetPendingCategory(int id)
+    public async Task<IActionResult> GetPendingCategory(int id)
     {
-        CategorySubmission? submission = _submissionService.GetPendingCategorySubmission(id);
+        CategorySubmission? submission = await _submissionService.GetPendingCategorySubmission(id);
         if (submission == null)
             return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
@@ -180,11 +180,11 @@ public class SubmissionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public IActionResult ApproveCategory(int id)
+    public async Task<IActionResult> ApproveCategory(int id)
     {
         try
         {
-            int? categoryId = _submissionService.ApproveCategorySubmission(id);
+            int? categoryId = await _submissionService.ApproveCategorySubmission(id);
             if (categoryId == null)
                 return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
@@ -203,9 +203,9 @@ public class SubmissionsController : ControllerBase
     [HttpDelete("admin/categories/{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult RejectCategory(int id)
+    public async Task<IActionResult> RejectCategory(int id)
     {
-        if (!_submissionService.RejectCategorySubmission(id))
+        if (!await _submissionService.RejectCategorySubmission(id))
             return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
         return Ok(ApiResponse.SuccessMessage("Category submission rejected"));
