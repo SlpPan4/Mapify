@@ -23,6 +23,7 @@ public class OperatorsController : ControllerBase
     /// <summary>
     /// Returns all operators in the system.
     /// </summary>
+    /// <returns>A list of all operators.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Operator>>))]
     public async Task<IActionResult> GetAll()
@@ -32,8 +33,10 @@ public class OperatorsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns operator by ID.
+    /// Returns an operator by ID.
     /// </summary>
+    /// <param name="id">The operator ID.</param>
+    /// <returns>The operator data if found.</returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Operator>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -48,8 +51,10 @@ public class OperatorsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns operator ID by name.
+    /// Returns an operator ID by its exact name.
     /// </summary>
+    /// <param name="name">The operator name.</param>
+    /// <returns>An object containing the operator ID.</returns>
     [HttpGet("by-name/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -64,8 +69,11 @@ public class OperatorsController : ControllerBase
     }
 
     /// <summary>
-    /// Assign operator to strategy.
+    /// Assigns an operator to a strategy.
     /// </summary>
+    /// <param name="operatorId">The operator ID.</param>
+    /// <param name="stratId">The strategy ID.</param>
+    /// <returns>A success message if the assignment succeeded.</returns>
     [HttpPost("{operatorId:int}/assign/{stratId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
@@ -80,8 +88,11 @@ public class OperatorsController : ControllerBase
     }
 
     /// <summary>
-    /// Remove operator from strategy.
+    /// Removes an operator from a strategy.
     /// </summary>
+    /// <param name="operatorId">The operator ID.</param>
+    /// <param name="stratId">The strategy ID.</param>
+    /// <returns>A success message if the relation was removed.</returns>
     [HttpDelete("{operatorId:int}/remove/{stratId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

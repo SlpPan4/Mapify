@@ -3,15 +3,28 @@ using MapifyBackend.Utility.Enums;
 
 namespace MapifyBackend.database_files;
 
+/// <summary>
+/// Service layer for managing public strategy/category submissions and admin review.
+/// </summary>
 public class SubmissionService
 {
     private readonly DatabaseService _db;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SubmissionService"/> class.
+    /// </summary>
+    /// <param name="db">The database service used for data persistence.</param>
     public SubmissionService(DatabaseService db)
     {
         _db = db;
     }
 
+    /// <summary>
+    /// Submits a new strategy for admin approval.
+    /// </summary>
+    /// <param name="request">The strategy submission request.</param>
+    /// <returns>The ID of the created pending submission.</returns>
+    /// <exception cref="ArgumentException">Thrown when the map, category, or operator does not exist.</exception>
     public async Task<int> SubmitStrat(StratSubmissionRequest request)
     {
         int? mapId = await _db.GetMapIdByName(request.MapName);
@@ -43,6 +56,12 @@ public class SubmissionService
         return await _db.AddPendingStratSubmission(submission);
     }
 
+    /// <summary>
+    /// Submits a new category for admin approval.
+    /// </summary>
+    /// <param name="request">The category submission request.</param>
+    /// <returns>The ID of the created pending submission.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when a category with the same name already exists.</exception>
     public async Task<int> SubmitCategory(CategorySubmissionRequest request)
     {
         if (await _db.GetCategoryIdByName(request.Name) != null)
@@ -53,41 +72,79 @@ public class SubmissionService
         return await _db.AddPendingCategorySubmission(submission);
     }
 
+    /// <summary>
+    /// Retrieves all pending strategy submissions.
+    /// </summary>
+    /// <returns>A list of pending strategy submissions.</returns>
     public async Task<List<StratSubmission>> GetPendingStratSubmissions()
     {
         return await _db.GetPendingStratSubmissions();
     }
 
+    /// <summary>
+    /// Retrieves a pending strategy submission by ID.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The pending submission if found; otherwise, null.</returns>
     public async Task<StratSubmission?> GetPendingStratSubmission(int id)
     {
         return await _db.GetPendingStratSubmissionById(id);
     }
 
+    /// <summary>
+    /// Approves a pending strategy submission and moves it to the public strategies table.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The ID of the approved strategy if found; otherwise, null.</returns>
     public async Task<int?> ApproveStratSubmission(int id)
     {
         return await _db.ApprovePendingStratSubmission(id);
     }
 
+    /// <summary>
+    /// Rejects a pending strategy submission.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>True if the submission was found and rejected; otherwise, false.</returns>
     public async Task<bool> RejectStratSubmission(int id)
     {
         return await _db.DeletePendingStratSubmission(id);
     }
 
+    /// <summary>
+    /// Retrieves all pending category submissions.
+    /// </summary>
+    /// <returns>A list of pending category submissions.</returns>
     public async Task<List<CategorySubmission>> GetPendingCategorySubmissions()
     {
         return await _db.GetPendingCategorySubmissions();
     }
 
+    /// <summary>
+    /// Retrieves a pending category submission by ID.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The pending submission if found; otherwise, null.</returns>
     public async Task<CategorySubmission?> GetPendingCategorySubmission(int id)
     {
         return await _db.GetPendingCategorySubmissionById(id);
     }
 
+    /// <summary>
+    /// Approves a pending category submission and moves it to the public categories table.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The ID of the approved category if found; otherwise, null.</returns>
     public async Task<int?> ApproveCategorySubmission(int id)
     {
         return await _db.ApprovePendingCategorySubmission(id);
     }
 
+    /// <summary>
+    /// Rejects a pending category submission.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>True if the submission was found and rejected; otherwise, false.</returns>
     public async Task<bool> RejectCategorySubmission(int id)
     {
         return await _db.DeletePendingCategorySubmission(id);

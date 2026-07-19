@@ -26,25 +26,36 @@ public class StratsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns all strategies in the system.
+    /// Returns all strategies in the system, optionally filtered by name, map, category, or operator.
     /// </summary>
+    /// <param name="name">Optional case-insensitive substring filter on strategy name.</param>
+    /// <param name="mapId">Optional filter by map ID.</param>
+    /// <param name="categoryId">Optional filter by assigned category ID.</param>
+    /// <param name="operatorId">Optional filter by assigned operator ID.</param>
+    /// <returns>A list of strategies matching the provided filters.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Strat>>))]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] string? name,
+        [FromQuery] int? mapId,
+        [FromQuery] int? categoryId,
+        [FromQuery] int? operatorId)
     {
-        var allStrats = await _stratService.GetAllStrats();
-        return Ok(ApiResponse.Success(allStrats));
+        var strats = await _stratService.GetStratsFiltered(name, mapId, categoryId, operatorId);
+        return Ok(ApiResponse.Success(strats));
     }
 
     /// <summary>
-    /// Returns a single strategy by ID.
+    /// Returns a single strategy by ID, including its map, categories, and operators.
     /// </summary>
+    /// <param name="id">The strategy ID.</param>
+    /// <returns>The detailed strategy data if found.</returns>
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Strat>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StratDetail>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetById(int id)
     {
-        Strat? strat = await _stratService.GetStrat(id);
+        StratDetail? strat = await _stratService.GetStratDetail(id);
         if (strat == null)
         {
             return NotFound(ApiResponse.NotFound($"Strat by ID {id} was not found"));
@@ -56,6 +67,8 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Returns a map by ID.
     /// </summary>
+    /// <param name="id">The map ID.</param>
+    /// <returns>The map data if found.</returns>
     [HttpGet("maps/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Map>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -79,8 +92,10 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Creates and posts a new strategy.
     /// </summary>
+    /// <param name="request">The strategy creation request.</param>
+    /// <returns>The ID of the newly created strategy with a Location header.</returns>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> Create([FromBody] StratRequest request)
@@ -88,8 +103,8 @@ public class StratsController : ControllerBase
         try
         {
             InputValidator.ValidateStratRequest(request);
-            await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName);
-            return Ok(ApiResponse.SuccessMessage("Strategy added!"));
+            int stratId = await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName);
+            return Created($"/api/strats/{stratId}", ApiResponse.Created(new { stratId }, "Strategy added!"));
         }
         catch (ValidationException ex)
         {
@@ -108,6 +123,8 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Deletes a strategy by ID.
     /// </summary>
+    /// <param name="id">The strategy ID.</param>
+    /// <returns>A success message if the strategy was deleted.</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -120,8 +137,81 @@ public class StratsController : ControllerBase
     }
 
     /// <summary>
+    /// Fully replaces an existing strategy.
+    /// </summary>
+    /// <param name="id">The strategy ID.</param>
+    /// <param name="request">The full update request.</param>
+    /// <returns>A success message if the strategy was updated.</returns>
+    [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateStrat(int id, [FromBody] StratUpdateRequest request)
+    {
+        try
+        {
+            InputValidator.ValidateStratUpdateRequest(request);
+            bool updated = await _stratService.UpdateStrat(id, request);
+            if (!updated)
+                return NotFound(ApiResponse.NotFound($"Strat by ID {id} was not found"));
+
+            return Ok(ApiResponse.SuccessMessage("Strategy updated!"));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ApiResponse.BadRequest(ex.Message));
+        }
+        catch (ArgumentException)
+        {
+            return NotFound(ApiResponse.NotFound($"No map by the name {request.MapName}"));
+        }
+        catch (Exception)
+        {
+            return BadRequest(ApiResponse.BadRequest("Error updating strategy"));
+        }
+    }
+
+    /// <summary>
+    /// Partially updates an existing strategy. Only provided fields are changed.
+    /// </summary>
+    /// <param name="id">The strategy ID.</param>
+    /// <param name="request">The partial update request.</param>
+    /// <returns>A success message if the strategy was updated.</returns>
+    [HttpPatch("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> PatchStrat(int id, [FromBody] StratPatchRequest request)
+    {
+        try
+        {
+            InputValidator.ValidateStratPatchRequest(request);
+            bool updated = await _stratService.PatchStrat(id, request);
+            if (!updated)
+                return NotFound(ApiResponse.NotFound($"Strat by ID {id} was not found"));
+
+            return Ok(ApiResponse.SuccessMessage("Strategy updated!"));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ApiResponse.BadRequest(ex.Message));
+        }
+        catch (ArgumentException)
+        {
+            return NotFound(ApiResponse.NotFound($"No map by the name {request.MapName}"));
+        }
+        catch (Exception)
+        {
+            return BadRequest(ApiResponse.BadRequest("Error updating strategy"));
+        }
+    }
+
+    /// <summary>
     /// Assigns a strategy to a category.
     /// </summary>
+    /// <param name="stratId">The strategy ID.</param>
+    /// <param name="categoryId">The category ID.</param>
+    /// <returns>A success message if the assignment succeeded.</returns>
     [HttpPost("assign/strat/{stratId}/category/{categoryId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
@@ -141,6 +231,8 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Returns all strategies in a category.
     /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>A list of strategies in the category.</returns>
     [HttpGet("category/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Strat>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -156,6 +248,8 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Returns all strategies for a map.
     /// </summary>
+    /// <param name="id">The map ID.</param>
+    /// <returns>A list of strategies for the map.</returns>
     [HttpGet("bymap/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Strat>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -171,6 +265,8 @@ public class StratsController : ControllerBase
     /// <summary>
     /// Returns all strategies that use a specific operator.
     /// </summary>
+    /// <param name="id">The operator ID.</param>
+    /// <returns>A list of strategies using the operator.</returns>
     [HttpGet("byoperator/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Strat>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -184,8 +280,10 @@ public class StratsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns a map ID by its name.
+    /// Returns a map ID by its name. The match is case-insensitive.
     /// </summary>
+    /// <param name="mapName">The map name.</param>
+    /// <returns>The ID of the map if found.</returns>
     [HttpGet("maps/byname/{mapName}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<int>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

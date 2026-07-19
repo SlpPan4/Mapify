@@ -28,6 +28,7 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Returns all categories in the system.
     /// </summary>
+    /// <returns>A list of all categories.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Category>>))]
     public async Task<IActionResult> GetAll()
@@ -39,6 +40,8 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Returns a category by ID.
     /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>The category data if found.</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Category>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -56,8 +59,10 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Creates a new category.
     /// </summary>
+    /// <param name="request">The category creation request containing name and side.</param>
+    /// <returns>The ID of the newly created category with a Location header.</returns>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> Create([FromBody] CategoryRequest request)
     {
@@ -65,8 +70,8 @@ public class CategoriesController : ControllerBase
         {
             InputValidator.ValidateCategoryRequest(request);
             Side side = Enum.Parse<Side>(request.Side);
-            await _categoryService.AddCategory(request.Name, side);
-            return Ok(ApiResponse.SuccessMessage("Category added"));
+            int categoryId = await _categoryService.AddCategory(request.Name, side);
+            return Created($"/api/categories/{categoryId}", ApiResponse.Created(new { categoryId }, "Category added"));
         }
         catch (ValidationException ex)
         {
@@ -81,6 +86,8 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Deletes a category by ID.
     /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>A success message if the category was deleted.</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -95,6 +102,8 @@ public class CategoriesController : ControllerBase
     /// <summary>
     /// Returns the name of a category by ID.
     /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>An object containing the category name.</returns>
     [HttpGet("category_name/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

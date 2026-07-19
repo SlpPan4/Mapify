@@ -1,4 +1,4 @@
-﻿using MapifyBackend.Utility.DTOs;
+using MapifyBackend.Utility.DTOs;
 
 namespace MapifyBackend.Utility;
 
@@ -18,11 +18,43 @@ public static class InputValidator
             throw new ValidationException($"{fieldName} must be less than {maxLength} characters");
     }
 
+    private static void ValidateOptionalString(string? value, string fieldName, int maxLength = 500)
+    {
+        if (value is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ValidationException($"{fieldName} cannot be empty when provided");
+
+        if (value.Length > maxLength)
+            throw new ValidationException($"{fieldName} must be less than {maxLength} characters");
+    }
+
     public static void ValidateStratRequest(StratRequest request)
     {
         ValidateString(request.Name, "Name", 100);
         ValidateString(request.VideoUrl, "VideoUrl", 500);
         ValidateString(request.MapName, "MapName", 100);
+    }
+
+    public static void ValidateStratUpdateRequest(StratUpdateRequest request)
+    {
+        ValidateString(request.Name, "Name", 100);
+        ValidateString(request.VideoUrl, "VideoUrl", 500);
+        ValidateString(request.MapName, "MapName", 100);
+
+        if (request.Description is { Length: > 1000 })
+            throw new ValidationException("Description must be less than 1000 characters");
+    }
+
+    public static void ValidateStratPatchRequest(StratPatchRequest request)
+    {
+        ValidateOptionalString(request.Name, "Name", 100);
+        ValidateOptionalString(request.VideoUrl, "VideoUrl", 500);
+        ValidateOptionalString(request.MapName, "MapName", 100);
+
+        if (request.Description is { Length: > 1000 })
+            throw new ValidationException("Description must be less than 1000 characters");
     }
 
     public static void ValidateCategoryRequest(CategoryRequest request)
