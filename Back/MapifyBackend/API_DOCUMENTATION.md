@@ -6,6 +6,22 @@ Base URL during local development depends on the ASP.NET launch profile, usually
 
 ## Conventions
 
+- All responses share a single envelope format:
+
+  ```json
+  {
+    "status": 200,
+    "data": { ... },
+    "message": "...",
+    "error": null
+  }
+  ```
+
+  - `status` — HTTP status code of the response.
+  - `data` — response payload on success; `null` on error.
+  - `message` — human-readable summary; present on many success responses and some errors.
+  - `error` — error description; `null` on success.
+
 - `side` must be `"Attack"` or `"Defense"`.
 - Current create/update-style endpoints generally return `200 OK` instead of `201 Created`.
 - Admin submission endpoints are route-separated but not protected by backend authentication yet. They must not be exposed publicly without hosting/auth restrictions.
@@ -91,15 +107,20 @@ Base route: `/api/strats`
 Response `200 OK`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Cool Ash Rush",
-    "videoUrl": "youtube.com",
-    "mapId": 7,
-    "description": ""
-  }
-]
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Cool Ash Rush",
+      "videoUrl": "youtube.com",
+      "mapId": 7,
+      "description": ""
+    }
+  ],
+  "message": null,
+  "error": null
+}
 ```
 
 ### Get Strat By ID
@@ -110,11 +131,16 @@ Response `200 OK`:
 
 ```json
 {
-  "id": 1,
-  "name": "Cool Ash Rush",
-  "videoUrl": "youtube.com",
-  "mapId": 7,
-  "description": ""
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Cool Ash Rush",
+    "videoUrl": "youtube.com",
+    "mapId": 7,
+    "description": ""
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -122,7 +148,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Strat by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strat by ID 999 was not found"
 }
 ```
 
@@ -146,7 +175,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Strategy added!"
+  "status": 200,
+  "data": null,
+  "message": "Strategy added!",
+  "error": null
 }
 ```
 
@@ -154,6 +186,9 @@ Response `400 Bad Request`:
 
 ```json
 {
+  "status": 400,
+  "data": null,
+  "message": null,
   "error": "Name is required"
 }
 ```
@@ -162,6 +197,9 @@ Response `404 Not Found`:
 
 ```json
 {
+  "status": 404,
+  "data": null,
+  "message": null,
   "error": "No map by the name Oregon"
 }
 ```
@@ -174,7 +212,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Strategy deleted!"
+  "status": 200,
+  "data": null,
+  "message": "Strategy deleted!",
+  "error": null
 }
 ```
 
@@ -182,7 +223,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Strat by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strat by ID 999 was not found"
 }
 ```
 
@@ -194,7 +238,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Strat assigned"
+  "status": 200,
+  "data": null,
+  "message": "Strat assigned",
+  "error": null
 }
 ```
 
@@ -202,6 +249,9 @@ Response `400 Bad Request`:
 
 ```json
 {
+  "status": 400,
+  "data": null,
+  "message": null,
   "error": "No category by id 999"
 }
 ```
@@ -213,22 +263,30 @@ Response `400 Bad Request`:
 Response `200 OK`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Cool Ash Rush",
-    "videoUrl": "youtube.com",
-    "mapId": 7,
-    "description": ""
-  }
-]
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Cool Ash Rush",
+      "videoUrl": "youtube.com",
+      "mapId": 7,
+      "description": ""
+    }
+  ],
+  "message": null,
+  "error": null
+}
 ```
 
 Response `404 Not Found`:
 
 ```json
 {
-  "message": "No strats found in category 999"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "No strats found in category 999"
 }
 ```
 
@@ -240,8 +298,13 @@ Response `200 OK`:
 
 ```json
 {
-  "id": 1,
-  "name": "Oregon"
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Oregon"
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -249,7 +312,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Map by id 999 not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Map by id 999 not found"
 }
 ```
 
@@ -260,10 +326,24 @@ Response `404 Not Found`:
 Response `200 OK`:
 
 ```json
-1
+{
+  "status": 200,
+  "data": 1,
+  "message": null,
+  "error": null
+}
 ```
 
-Current behavior may return `200 OK` with `null` for an unknown map.
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "No maps found with such name Unknown"
+}
+```
 
 ## Categories
 
@@ -276,13 +356,18 @@ Base route: `/api/categories`
 Response `200 OK`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Rush",
-    "side": "Attack"
-  }
-]
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Rush",
+      "side": "Attack"
+    }
+  ],
+  "message": null,
+  "error": null
+}
 ```
 
 ### Get Category By ID
@@ -293,9 +378,14 @@ Response `200 OK`:
 
 ```json
 {
-  "id": 1,
-  "name": "Rush",
-  "side": "Attack"
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Rush",
+    "side": "Attack"
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -303,7 +393,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Category by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category by ID 999 was not found"
 }
 ```
 
@@ -326,7 +419,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Category added"
+  "status": 200,
+  "data": null,
+  "message": "Category added",
+  "error": null
 }
 ```
 
@@ -334,6 +430,9 @@ Response `400 Bad Request`:
 
 ```json
 {
+  "status": 400,
+  "data": null,
+  "message": null,
   "error": "Side must be only 'Attack' or 'Defense'"
 }
 ```
@@ -346,7 +445,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Category deleted"
+  "status": 200,
+  "data": null,
+  "message": "Category deleted",
+  "error": null
 }
 ```
 
@@ -354,7 +456,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Category by id 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category by id 999 was not found"
 }
 ```
 
@@ -366,7 +471,12 @@ Response `200 OK`:
 
 ```json
 {
-  "name": "Rush"
+  "status": 200,
+  "data": {
+    "name": "Rush"
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -374,7 +484,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Category by id 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category by id 999 was not found"
 }
 ```
 
@@ -389,13 +502,18 @@ Base route: `/api/operators`
 Response `200 OK`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Ash",
-    "side": "Attack"
-  }
-]
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Ash",
+      "side": "Attack"
+    }
+  ],
+  "message": null,
+  "error": null
+}
 ```
 
 ### Get Operator By ID
@@ -406,9 +524,14 @@ Response `200 OK`:
 
 ```json
 {
-  "id": 1,
-  "name": "Ash",
-  "side": "Attack"
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Ash",
+    "side": "Attack"
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -416,7 +539,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Operator not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Operator not found"
 }
 ```
 
@@ -428,7 +554,12 @@ Response `200 OK`:
 
 ```json
 {
-  "id": 1
+  "status": 200,
+  "data": {
+    "id": 1
+  },
+  "message": null,
+  "error": null
 }
 ```
 
@@ -436,7 +567,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Operator not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Operator not found"
 }
 ```
 
@@ -448,7 +582,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Operator assigned successfully"
+  "status": 200,
+  "data": null,
+  "message": "Operator assigned successfully",
+  "error": null
 }
 ```
 
@@ -456,7 +593,10 @@ Response `400 Bad Request`:
 
 ```json
 {
-  "message": "Could not assign operator to strategy"
+  "status": 400,
+  "data": null,
+  "message": null,
+  "error": "Could not assign operator to strategy"
 }
 ```
 
@@ -468,7 +608,10 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Operator removed from strategy"
+  "status": 200,
+  "data": null,
+  "message": "Operator removed from strategy",
+  "error": null
 }
 ```
 
@@ -476,7 +619,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Relation not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Relation not found"
 }
 ```
 
@@ -507,8 +653,12 @@ Response `200 OK`:
 
 ```json
 {
+  "status": 200,
+  "data": {
+    "submissionId": 1
+  },
   "message": "Strategy submitted for approval",
-  "submissionId": 1
+  "error": null
 }
 ```
 
@@ -516,6 +666,9 @@ Response `400 Bad Request`:
 
 ```json
 {
+  "status": 400,
+  "data": null,
+  "message": null,
   "error": "VideoUrl is required"
 }
 ```
@@ -524,6 +677,9 @@ Response `404 Not Found`:
 
 ```json
 {
+  "status": 404,
+  "data": null,
+  "message": null,
   "error": "Map 'Unknown' does not exist"
 }
 ```
@@ -545,8 +701,12 @@ Response `200 OK`:
 
 ```json
 {
+  "status": 200,
+  "data": {
+    "submissionId": 1
+  },
   "message": "Category submitted for approval",
-  "submissionId": 1
+  "error": null
 }
 ```
 
@@ -554,6 +714,9 @@ Response `400 Bad Request`:
 
 ```json
 {
+  "status": 400,
+  "data": null,
+  "message": null,
   "error": "Side must be only 'Attack' or 'Defense'"
 }
 ```
@@ -571,8 +734,35 @@ These endpoints are intended for a future admin panel. They are not protected by
 Response `200 OK`:
 
 ```json
-[
-  {
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Oregon attic execute",
+      "videoUrl": "https://youtube.com/watch?v=example",
+      "mapId": 1,
+      "description": "Open attic wall and plant behind half wall.",
+      "submittedAt": "2026-06-30T12:00:00",
+      "categoryIds": [1, 2],
+      "operatorIds": [1, 4]
+    }
+  ],
+  "message": null,
+  "error": null
+}
+```
+
+### Get Pending Strat Submission
+
+`GET /api/submissions/admin/strats/{id}`
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": {
     "id": 1,
     "name": "Oregon attic execute",
     "videoUrl": "https://youtube.com/watch?v=example",
@@ -581,21 +771,20 @@ Response `200 OK`:
     "submittedAt": "2026-06-30T12:00:00",
     "categoryIds": [1, 2],
     "operatorIds": [1, 4]
-  }
-]
+  },
+  "message": null,
+  "error": null
+}
 ```
-
-### Get Pending Strat Submission
-
-`GET /api/submissions/admin/strats/{id}`
-
-Response `200 OK`: a single strat submission.
 
 Response `404 Not Found`:
 
 ```json
 {
-  "message": "Strategy submission by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strategy submission by ID 999 was not found"
 }
 ```
 
@@ -607,8 +796,12 @@ Response `200 OK`:
 
 ```json
 {
+  "status": 200,
+  "data": {
+    "stratId": 4
+  },
   "message": "Strategy submission approved",
-  "stratId": 4
+  "error": null
 }
 ```
 
@@ -616,7 +809,10 @@ Response `404 Not Found`:
 
 ```json
 {
-  "message": "Strategy submission by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strategy submission by ID 999 was not found"
 }
 ```
 
@@ -628,7 +824,21 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Strategy submission rejected"
+  "status": 200,
+  "data": null,
+  "message": "Strategy submission rejected",
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strategy submission by ID 999 was not found"
 }
 ```
 
@@ -639,27 +849,49 @@ Response `200 OK`:
 Response `200 OK`:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Shield clear",
-    "side": "Attack",
-    "submittedAt": "2026-06-30T12:00:00"
-  }
-]
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Shield clear",
+      "side": "Attack",
+      "submittedAt": "2026-06-30T12:00:00"
+    }
+  ],
+  "message": null,
+  "error": null
+}
 ```
 
 ### Get Pending Category Submission
 
 `GET /api/submissions/admin/categories/{id}`
 
-Response `200 OK`: a single category submission.
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Shield clear",
+    "side": "Attack",
+    "submittedAt": "2026-06-30T12:00:00"
+  },
+  "message": null,
+  "error": null
+}
+```
 
 Response `404 Not Found`:
 
 ```json
 {
-  "message": "Category submission by ID 999 was not found"
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category submission by ID 999 was not found"
 }
 ```
 
@@ -671,8 +903,23 @@ Response `200 OK`:
 
 ```json
 {
+  "status": 200,
+  "data": {
+    "categoryId": 9
+  },
   "message": "Category submission approved",
-  "categoryId": 9
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category submission by ID 999 was not found"
 }
 ```
 
@@ -684,7 +931,21 @@ Response `200 OK`:
 
 ```json
 {
-  "message": "Category submission rejected"
+  "status": 200,
+  "data": null,
+  "message": "Category submission rejected",
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category submission by ID 999 was not found"
 }
 ```
 
