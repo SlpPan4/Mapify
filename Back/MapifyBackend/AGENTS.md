@@ -6,7 +6,7 @@ This document is a quick reference for AI coding agents working on the MapifyBac
 
 MapifyBackend is an ASP.NET Core Web API for the Mapify application. It stores and serves video-game Rainbox Six Siege strategies data: **maps**, **strategies** ("strats"), **categories**, and **operators**. It also supports a public submission workflow where users can propose new strats/categories; proposals land in pending tables and are promoted to public tables only after admin approval.
 
-The project is a single .NET web project (`MapifyBackend/MapifyBackend.csproj`) inside a Visual Studio solution (`MapifyBackend.sln`).
+The solution contains the main web project (`MapifyBackend/MapifyBackend.csproj`) and an xUnit integration-test project (`MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj`).
 
 ## Technology Stack
 
@@ -54,6 +54,15 @@ MapifyBackend/
     │   ├── StratRequest.cs
     │   └── StratSubmissionRequest.cs
     └── Enums/Side.cs                       # Attack / Defense enum
+
+MapifyBackend.IntegrationTests/
+├── ControllerTestsBase.cs                  # Per-test WebApplicationFactory setup
+├── CustomWebApplicationFactory.cs          # Isolated temp-database factory
+├── HttpResponseMessageExtensions.cs        # Test JSON helpers (includes enum converter)
+├── CategoriesControllerTests.cs
+├── OperatorsControllerTests.cs
+├── StratsControllerTests.cs
+└── SubmissionsControllerTests.cs
 ```
 
 ## Runtime Architecture
@@ -73,7 +82,19 @@ MapifyBackend/
 
 ### Requirements
 
-- .NET 10 SDK (verified: `10.0.201`)
+- .NET 10 SDK (verified: `10.0.302`)
+
+If the SDK is not installed, options include:
+
+- **Installer:** download the .NET 10 SDK from https://dotnet.microsoft.com/download/dotnet/10.0 and run it.
+- **winget:** `winget install Microsoft.DotNet.SDK.10`
+- **Install script (PowerShell):**
+  ```powershell
+  Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+  .\dotnet-install.ps1 -Channel 10.0
+  ```
+
+After installation, verify with `dotnet --version`.
 
 ### Build the solution
 
@@ -91,7 +112,15 @@ By default ASP.NET Core will listen on `http://localhost:{port}` (the exact port
 
 ### Test projects
 
-There are currently **no test projects** in this repository.
+The solution includes `MapifyBackend.IntegrationTests`, an xUnit project that uses `WebApplicationFactory<Program>` with an isolated temp-file SQLite database for each test.
+
+Run the tests:
+
+```bash
+dotnet test MapifyBackend.sln
+```
+
+New controller tests should follow the existing pattern in `MapifyBackend.IntegrationTests/*ControllerTests.cs`: inherit `ControllerTestsBase`, use `Client` to call the API, and deserialize responses with `ReadApiResponseAsync<T>()` (it configures `JsonStringEnumConverter` for the `Side` enum).
 
 ## API Routing Summary
 
@@ -110,10 +139,10 @@ See `API_DOCUMENTATION.md` for full request/response details.
 ## Code Style and Conventions
 
 - Use the existing namespace style: `MapifyBackend.<folder>`.
-- Entity/DTO property names use PascalCase. Some JSON output uses camelCase aliases mapped via Dapper (`videoUrl`, `mapId`, etc.).
+- Entity/DTO property names use PascalCase. Some JSON output uses camelCase aliases mapped via Dapper (`videoUrl`, `mapId`, etc.). Entity properties have public setters so they can be both mapped by Dapper and round-tripped through `System.Text.Json` in integration tests.
 - The `Side` enum is serialized as a JSON string (`Attack`, `Defense`).
 - Map names are normalized with `StringHelper.Capitalize` in request DTOs (`StratRequest`, `StratSubmissionRequest`).
-- Async methods are preferred for I/O in `StratService` / `DatabaseService`, but many data-access methods are synchronous. Match the pattern in the surrounding code.
+- All database I/O in `DatabaseService` and the service layer is asynchronous (`async`/`await`). Match the existing pattern when adding new data-access methods.
 - Controllers return `IActionResult` and wrap errors in anonymous objects like `new { error = "..." }` or `new { message = "..." }`.
 
 ## Important Implementation Notes
@@ -150,4 +179,11 @@ See `API_DOCUMENTATION.md` for full request/response details.
 
 ### Add tests
 
-There is no test project yet. Create a new xUnit/NUnit project at the solution root, add a project reference to `MapifyBackend/MapifyBackend.csproj`, and consider abstracting `DatabaseService` or using an in-memory SQLite connection for isolated tests.
+Add test classes to the existing `MapifyBackend.IntegrationTests` project:
+
+1. Inherit `ControllerTestsBase` to get a fresh `WebApplicationFactory`/`HttpClient` per test.
+2. Call endpoints through `Client` and assert status codes / response envelopes.
+3. For typed responses that include the `Side` enum, use `response.ReadApiResponseAsync<T>()` from `HttpResponseMessageExtensions` so the enum string values deserialize correctly.
+4. Avoid sharing mutable state between tests; the base class creates a new isolated database for each test.
+
+Only create a new test project if you need unit tests that do not require the full ASP.NET Core host.
