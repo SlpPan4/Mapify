@@ -34,16 +34,19 @@ public class StratsControllerTests : ControllerTestsBase
     }
 
     [Fact]
-    public async Task GetById_Existing_ReturnsStrat()
+    public async Task GetById_Existing_ReturnsStratDetail()
     {
         var response = await Client.GetAsync("/api/strats/1");
 
         response.EnsureSuccessStatusCode();
-        var result = await response.ReadApiResponseAsync<Strat>();
+        var result = await response.ReadApiResponseAsync<StratDetail>();
         Assert.NotNull(result);
         Assert.NotNull(result.Data);
         Assert.Equal(1, result.Data.Id);
         Assert.Equal("Cool Ash Rush", result.Data.Name);
+        Assert.NotNull(result.Data.Map);
+        Assert.NotNull(result.Data.Categories);
+        Assert.NotNull(result.Data.Operators);
     }
 
     [Fact]
@@ -75,7 +78,7 @@ public class StratsControllerTests : ControllerTestsBase
     }
 
     [Fact]
-    public async Task Create_Valid_ReturnsSuccess()
+    public async Task Create_Valid_ReturnsCreated()
     {
         var request = new StratRequest
         {
@@ -86,7 +89,7 @@ public class StratsControllerTests : ControllerTestsBase
 
         var response = await Client.PostAsJsonAsync("/api/strats", request);
 
-        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
         Assert.NotNull(result);
         Assert.Equal("Strategy added!", result.Message);
@@ -222,5 +225,106 @@ public class StratsControllerTests : ControllerTestsBase
         var response = await Client.GetAsync("/api/strats/maps/byname/NonExistent");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStrat_Valid_ReturnsSuccess()
+    {
+        var request = new StratUpdateRequest
+        {
+            Name = "Updated Strat",
+            VideoUrl = "https://updated.example.com",
+            MapName = "Bank"
+        };
+
+        var response = await Client.PutAsJsonAsync("/api/strats/1", request);
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("Strategy updated!", result.Message);
+    }
+
+    [Fact]
+    public async Task UpdateStrat_NonExisting_ReturnsNotFound()
+    {
+        var request = new StratUpdateRequest
+        {
+            Name = "Updated Strat",
+            VideoUrl = "https://updated.example.com",
+            MapName = "Bank"
+        };
+
+        var response = await Client.PutAsJsonAsync("/api/strats/9999", request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PatchStrat_Valid_ReturnsSuccess()
+    {
+        var request = new StratPatchRequest
+        {
+            Description = "Patched description"
+        };
+
+        var response = await Client.PatchAsJsonAsync("/api/strats/1", request);
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("Strategy updated!", result.Message);
+    }
+
+    [Fact]
+    public async Task PatchStrat_NonExisting_ReturnsNotFound()
+    {
+        var request = new StratPatchRequest
+        {
+            Description = "Patched description"
+        };
+
+        var response = await Client.PatchAsJsonAsync("/api/strats/9999", request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAll_WithNameFilter_ReturnsMatchingStrats()
+    {
+        var response = await Client.GetAsync("/api/strats?name=Ash");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.ReadApiResponseAsync<List<Strat>>();
+        Assert.NotNull(result);
+        Assert.NotNull(result.Data);
+        Assert.All(result.Data, s => Assert.Contains("Ash", s.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetAll_WithMapFilter_ReturnsMatchingStrats()
+    {
+        var response = await Client.GetAsync("/api/strats?mapId=7");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.ReadApiResponseAsync<List<Strat>>();
+        Assert.NotNull(result);
+        Assert.NotNull(result.Data);
+        Assert.Contains(result.Data, s => s.Id == 1);
+    }
+
+    [Fact]
+    public async Task Create_WithLowercaseMapName_ReturnsCreated()
+    {
+        var request = new StratRequest
+        {
+            Name = "Lowercase Map Test",
+            VideoUrl = "https://example.com",
+            MapName = "oregon"
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/strats", request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 }

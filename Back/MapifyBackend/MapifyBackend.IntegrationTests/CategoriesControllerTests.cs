@@ -45,7 +45,7 @@ public class CategoriesControllerTests : ControllerTestsBase
     }
 
     [Fact]
-    public async Task Create_Valid_ReturnsSuccess()
+    public async Task Create_Valid_ReturnsCreated()
     {
         var request = new CategoryRequest
         {
@@ -55,7 +55,7 @@ public class CategoriesControllerTests : ControllerTestsBase
 
         var response = await Client.PostAsJsonAsync("/api/categories", request);
 
-        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
         Assert.NotNull(result);
         Assert.Equal("Category added", result.Message);

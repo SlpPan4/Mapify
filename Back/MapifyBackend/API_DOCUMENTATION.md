@@ -1,6 +1,6 @@
 # Mapify Backend API Documentation
 
-Updated: 2026-06-30
+Updated: 2026-07-19
 
 Base URL during local development depends on the ASP.NET launch profile, usually `http://localhost:{port}`. All endpoints below are relative to that base URL and return JSON.
 
@@ -23,7 +23,7 @@ Base URL during local development depends on the ASP.NET launch profile, usually
   - `error` — error description; `null` on success.
 
 - `side` must be `"Attack"` or `"Defense"`.
-- Current create/update-style endpoints generally return `200 OK` instead of `201 Created`.
+- Create endpoints return `201 Created` with a `Location` header and the created resource ID in `data`.
 - Admin submission endpoints are route-separated but not protected by backend authentication yet. They must not be exposed publicly without hosting/auth restrictions.
 - Public frontend submission endpoints should use `/api/submissions/...`, not the direct `/api/strats` or `/api/categories` create endpoints.
 
@@ -38,6 +38,37 @@ Base URL during local development depends on the ASP.NET launch profile, usually
   "videoUrl": "youtube.com",
   "mapId": 7,
   "description": ""
+}
+```
+
+### Strat Detail
+
+Returned by `GET /api/strats/{id}`. Includes the related map, categories, and operators.
+
+```json
+{
+  "id": 1,
+  "name": "Cool Ash Rush",
+  "videoUrl": "youtube.com",
+  "description": "",
+  "map": {
+    "id": 7,
+    "name": "Coastline"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Rush",
+      "side": "Attack"
+    }
+  ],
+  "operators": [
+    {
+      "id": 1,
+      "name": "Ash",
+      "side": "Attack"
+    }
+  ]
 }
 ```
 
@@ -104,6 +135,15 @@ Base route: `/api/strats`
 
 `GET /api/strats`
 
+Optional query parameters (can be combined):
+
+- `name` — case-insensitive substring match on strategy name.
+- `mapId` — filter by map ID.
+- `categoryId` — filter by assigned category ID.
+- `operatorId` — filter by assigned operator ID.
+
+Example: `GET /api/strats?name=Ash&mapId=7`
+
 Response `200 OK`:
 
 ```json
@@ -127,6 +167,8 @@ Response `200 OK`:
 
 `GET /api/strats/{id}`
 
+Returns the full strategy details including map, categories, and operators.
+
 Response `200 OK`:
 
 ```json
@@ -136,8 +178,25 @@ Response `200 OK`:
     "id": 1,
     "name": "Cool Ash Rush",
     "videoUrl": "youtube.com",
-    "mapId": 7,
-    "description": ""
+    "description": "",
+    "map": {
+      "id": 7,
+      "name": "Coastline"
+    },
+    "categories": [
+      {
+        "id": 1,
+        "name": "Rush",
+        "side": "Attack"
+      }
+    ],
+    "operators": [
+      {
+        "id": 1,
+        "name": "Ash",
+        "side": "Attack"
+      }
+    ]
   },
   "message": null,
   "error": null
@@ -171,12 +230,14 @@ Request:
 }
 ```
 
-Response `200 OK`:
+Response `201 Created`:
 
 ```json
 {
-  "status": 200,
-  "data": null,
+  "status": 201,
+  "data": {
+    "stratId": 4
+  },
   "message": "Strategy added!",
   "error": null
 }
@@ -201,6 +262,81 @@ Response `404 Not Found`:
   "data": null,
   "message": null,
   "error": "No map by the name Oregon"
+}
+```
+
+### Update Strat
+
+`PUT /api/strats/{id}`
+
+Fully replaces an existing strategy. All fields are required.
+
+Request:
+
+```json
+{
+  "name": "Oregon rush",
+  "videoUrl": "https://youtube.com/watch?v=example",
+  "mapName": "Oregon",
+  "description": "Updated description"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Strategy updated!",
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strat by ID 999 was not found"
+}
+```
+
+### Patch Strat
+
+`PATCH /api/strats/{id}`
+
+Partially updates an existing strategy. Only provided fields are changed.
+
+Request:
+
+```json
+{
+  "description": "Updated description only"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Strategy updated!",
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Strat by ID 999 was not found"
 }
 ```
 
@@ -415,12 +551,14 @@ Request:
 }
 ```
 
-Response `200 OK`:
+Response `201 Created`:
 
 ```json
 {
-  "status": 200,
-  "data": null,
+  "status": 201,
+  "data": {
+    "categoryId": 9
+  },
   "message": "Category added",
   "error": null
 }
@@ -649,11 +787,11 @@ Request:
 }
 ```
 
-Response `200 OK`:
+Response `201 Created`:
 
 ```json
 {
-  "status": 200,
+  "status": 201,
   "data": {
     "submissionId": 1
   },
@@ -697,11 +835,11 @@ Request:
 }
 ```
 
-Response `200 OK`:
+Response `201 Created`:
 
 ```json
 {
-  "status": 200,
+  "status": 201,
   "data": {
     "submissionId": 1
   },
@@ -973,6 +1111,8 @@ Public submission endpoints:
 Trusted/admin mutation endpoints:
 
 - `POST /api/strats`
+- `PUT /api/strats/{id}`
+- `PATCH /api/strats/{id}`
 - `DELETE /api/strats/{id}`
 - `POST /api/strats/assign/strat/{stratId}/category/{categoryId}`
 - `POST /api/categories`
