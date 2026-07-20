@@ -277,6 +277,21 @@ public class DatabaseService
     }
 
     /// <summary>
+    /// Retrieves multiple categories by their IDs.
+    /// </summary>
+    /// <param name="ids">The category IDs to retrieve.</param>
+    /// <returns>A list of matching <see cref="Category"/> objects.</returns>
+    public async Task<List<Category>> GetCategoriesByIds(List<int> ids)
+    {
+        if (ids.Count == 0)
+            return [];
+
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "SELECT id, name, side FROM categories WHERE id IN @ids";
+        return (await db.QueryAsync<Category>(sql, new { ids })).ToList();
+    }
+
+    /// <summary>
     /// Retrieves the ID of a category by its unique name.
     /// </summary>
     /// <param name="categoryName">The category name.</param>
@@ -821,6 +836,21 @@ public class DatabaseService
             sql,
             new { id = operatorId }
         );
+    }
+
+    /// <summary>
+    /// Retrieves multiple operators by their IDs.
+    /// </summary>
+    /// <param name="ids">The operator IDs to retrieve.</param>
+    /// <returns>A list of matching <see cref="Operator"/> objects.</returns>
+    public async Task<List<Operator>> GetOperatorsByIds(List<int> ids)
+    {
+        if (ids.Count == 0)
+            return [];
+
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "SELECT id, name, side FROM operators WHERE id IN @ids";
+        return (await db.QueryAsync<Operator>(sql, new { ids })).ToList();
     }
 
     /// <summary>

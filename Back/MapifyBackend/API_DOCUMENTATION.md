@@ -1,6 +1,6 @@
 # Mapify Backend API Documentation
 
-Updated: 2026-07-19
+Updated: 2026-07-20
 
 Base URL during local development depends on the ASP.NET launch profile, usually `http://localhost:{port}`. All endpoints below are relative to that base URL and return JSON.
 
@@ -26,6 +26,7 @@ Base URL during local development depends on the ASP.NET launch profile, usually
 - Create endpoints return `201 Created` with a `Location` header and the created resource ID in `data`.
 - Admin submission endpoints are route-separated but not protected by backend authentication yet. They must not be exposed publicly without hosting/auth restrictions.
 - Public frontend submission endpoints should use `/api/submissions/...`, not the direct `/api/strats` or `/api/categories` create endpoints.
+- When submitting a strategy, all selected `categoryIds` must belong to the same `side`, all selected `operatorIds` must belong to the same `side`, and the two sides must match if both lists are provided.
 
 ## Data Shapes
 
@@ -808,6 +809,26 @@ Response `400 Bad Request`:
   "data": null,
   "message": null,
   "error": "VideoUrl is required"
+}
+```
+
+Returned when selected categories or operators have mismatched sides:
+
+```json
+{
+  "status": 400,
+  "data": null,
+  "message": null,
+  "error": "All selected categories must belong to the same side"
+}
+```
+
+```json
+{
+  "status": 400,
+  "data": null,
+  "message": null,
+  "error": "Selected operators belong to Attack, but selected categories belong to Defense"
 }
 ```
 

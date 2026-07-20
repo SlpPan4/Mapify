@@ -278,6 +278,40 @@ public class SubmissionsControllerTests : ControllerTestsBase
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SubmitStrat_MismatchedCategorySides_ReturnsBadRequest()
+    {
+        var request = CreateValidStratSubmissionRequest();
+        request.CategoryIds = [1, 5]; // Attack + Defense
+
+        var response = await Client.PostAsJsonAsync("/api/submissions/strats", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitStrat_MismatchedOperatorSides_ReturnsBadRequest()
+    {
+        var request = CreateValidStratSubmissionRequest();
+        request.OperatorIds = [1, 5]; // Attack + Defense
+
+        var response = await Client.PostAsJsonAsync("/api/submissions/strats", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitStrat_CategoryOperatorSideMismatch_ReturnsBadRequest()
+    {
+        var request = CreateValidStratSubmissionRequest();
+        request.CategoryIds = [1];   // Attack
+        request.OperatorIds = [5];   // Defense
+
+        var response = await Client.PostAsJsonAsync("/api/submissions/strats", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private static StratSubmissionRequest CreateValidStratSubmissionRequest()
     {
         return new StratSubmissionRequest

@@ -25,6 +25,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Submits a new strategy for admin approval.
+    /// Selected categories and operators must belong to consistent sides.
     /// </summary>
     /// <param name="request">The strategy submission request.</param>
     /// <returns>The ID of the created pending submission with a Location header.</returns>

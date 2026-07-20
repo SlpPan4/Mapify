@@ -132,6 +132,7 @@ All responses use a single envelope:
 ## Important Notes
 
 - **No authentication/authorization** is implemented yet. Admin submission endpoints are route-separated but publicly reachable — protect them at the hosting/auth layer before exposing the API.
+- **Strategy submissions validate side consistency:** when submitting a strategy, all selected `categoryIds` must share the same `side`, all selected `operatorIds` must share the same `side`, and the two sides must match if both lists are provided.
 - **CORS is wide open** (`AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`). Tighten before production.
 - **Database** is file-based SQLite (`database.db`) initialized from `mainschema.sql` on every startup. Existing data is preserved thanks to `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`.
 - **NuGet advisory:** `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 triggers high-severity advisory [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q). Update SQLite-related packages when feasible.

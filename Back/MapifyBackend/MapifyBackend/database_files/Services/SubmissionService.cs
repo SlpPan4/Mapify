@@ -1,3 +1,4 @@
+using MapifyBackend.Utility;
 using MapifyBackend.Utility.DTOs;
 using MapifyBackend.Utility.Enums;
 
@@ -25,6 +26,7 @@ public class SubmissionService
     /// <param name="request">The strategy submission request.</param>
     /// <returns>The ID of the created pending submission.</returns>
     /// <exception cref="ArgumentException">Thrown when the map, category, or operator does not exist.</exception>
+    /// <exception cref="ValidationException">Thrown when selected categories or operators have mismatched sides.</exception>
     public async Task<int> SubmitStrat(StratSubmissionRequest request)
     {
         int? mapId = await _db.GetMapIdByName(request.MapName);
@@ -43,6 +45,30 @@ public class SubmissionService
         {
             if (await _db.GetOperatorById(operatorId) == null)
                 throw new ArgumentException($"Operator by id {operatorId} does not exist");
+        }
+
+        // Validate that selected categories and operators belong to consistent sides.
+        List<Category> categories = await _db.GetCategoriesByIds(categoryIds);
+        List<Operator> operators = await _db.GetOperatorsByIds(operatorIds);
+
+        Side? expectedSide = null;
+
+        if (categories.Count > 0)
+        {
+            expectedSide = categories[0].Side;
+            if (categories.Any(c => c.Side != expectedSide))
+                throw new ValidationException("All selected categories must belong to the same side");
+        }
+
+        if (operators.Count > 0)
+        {
+            Side operatorSide = operators[0].Side;
+            if (operators.Any(o => o.Side != operatorSide))
+                throw new ValidationException("All selected operators must belong to the same side");
+
+            if (expectedSide.HasValue && operatorSide != expectedSide.Value)
+                throw new ValidationException(
+                    $"Selected operators belong to {operatorSide}, but selected categories belong to {expectedSide.Value}");
         }
 
         StratSubmission submission = new StratSubmission(
