@@ -1,12 +1,12 @@
-﻿namespace MapifyBackend.database_files;
+namespace MapifyBackend.database_files;
 
 public class Strat
 {
-    public int Id { get; private set; } //ID of the strategy in the database
-    public string Name { get; private set; } //Name of the strat
-    public string VideoUrl { get; private set; } //URL for the video of the strat
-    public int MapId { get; private set; } //ID of the map
-    public string? Description { get; private set; }
+    public int Id { get; set; } //ID of the strategy in the database
+    public string Name { get; set; } = null!; //Name of the strat
+    public string VideoUrl { get; set; } = null!; //URL for the video of the strat
+    public int MapId { get; set; } //ID of the map
+    public string? Description { get; set; }
 
     public Strat(string stratName, string videoUrl, int mapId)
     {

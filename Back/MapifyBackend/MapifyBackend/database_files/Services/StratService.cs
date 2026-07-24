@@ -1,4 +1,6 @@
-﻿namespace MapifyBackend.database_files;
+using MapifyBackend.Utility.DTOs;
+
+namespace MapifyBackend.database_files;
 
 /// <summary>
 /// Service layer for managing strategies (strats) and their relations.
@@ -16,17 +18,17 @@ public class StratService
     {
         _dbService = databaseService;
     }
-    
+
     /// <summary>
     /// Creates a new strategy and saves it to the database.
     /// </summary>
     /// <param name="name">The name of the strategy.</param>
     /// <param name="videoUrl">The URL of the strategy's video guide.</param>
     /// <param name="mapName">The name of the map this strategy belongs to.</param>
-    /// <throws cref="ArgumentException">Thrown when the specified map name does not exist in the database.</throws>
+    /// <exception cref="ArgumentException">Thrown when the specified map name does not exist in the database.</exception>
     public async Task<int> CreateStrat(string name, string videoUrl, string mapName)
     {
-        int? mapId = GetMapIdByName(mapName);
+        int? mapId = await GetMapIdByName(mapName);
 
         if (mapId == null)
             throw new ArgumentException($"Map '{mapName}' does not exist");
@@ -40,9 +42,9 @@ public class StratService
     /// </summary>
     /// <param name="mapName">The name of the map to search for.</param>
     /// <returns>The map ID if found; otherwise, null.</returns>
-    public int? GetMapIdByName(string mapName)
+    public async Task<int?> GetMapIdByName(string mapName)
     {
-        return _dbService.GetMapIdByName(mapName);
+        return await _dbService.GetMapIdByName(mapName);
     }
 
     /// <summary>
@@ -56,12 +58,35 @@ public class StratService
     }
 
     /// <summary>
+    /// Retrieves a single strategy with its map, categories, and operators.
+    /// </summary>
+    /// <param name="id">The ID of the strategy.</param>
+    /// <returns>A <see cref="StratDetail"/> object if found; otherwise, null.</returns>
+    public async Task<StratDetail?> GetStratDetail(int id)
+    {
+        return await _dbService.GetStratDetailById(id);
+    }
+
+    /// <summary>
     /// Retrieves all strategies available in the database.
     /// </summary>
     /// <returns>A list of all <see cref="Strat"/> objects.</returns>
     public async Task<List<Strat>> GetAllStrats()
     {
-        return await _dbService.GetAllStrats();
+        return await _dbService.GetStratsFiltered(null, null, null, null);
+    }
+
+    /// <summary>
+    /// Retrieves strategies filtered by optional criteria.
+    /// </summary>
+    /// <param name="name">Optional case-insensitive substring match on strategy name.</param>
+    /// <param name="mapId">Optional filter by map ID.</param>
+    /// <param name="categoryId">Optional filter by assigned category ID.</param>
+    /// <param name="operatorId">Optional filter by assigned operator ID.</param>
+    /// <returns>A list of strategies matching the provided filters.</returns>
+    public async Task<List<Strat>> GetStratsFiltered(string? name, int? mapId, int? categoryId, int? operatorId)
+    {
+        return await _dbService.GetStratsFiltered(name, mapId, categoryId, operatorId);
     }
 
     /// <summary>
@@ -69,13 +94,69 @@ public class StratService
     /// </summary>
     /// <param name="id">The ID of the strategy to delete.</param>
     /// <returns>True if the strategy was found and successfully deleted; otherwise, false.</returns>
-    public bool DeleteStrat(int id)
+    public async Task<bool> DeleteStrat(int id)
     {
-        var strat = GetStrat(id);
+        var strat = await GetStrat(id);
         if (strat == null) return false;
 
-        _dbService.DeleteStrat(id);
+        await _dbService.DeleteStrat(id);
         return true;
+    }
+
+    /// <summary>
+    /// Fully replaces an existing strategy.
+    /// </summary>
+    /// <param name="id">The ID of the strategy to update.</param>
+    /// <param name="request">The update request containing new values.</param>
+    /// <returns>True if the strategy was found and updated; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when the specified map name does not exist.</exception>
+    public async Task<bool> UpdateStrat(int id, StratUpdateRequest request)
+    {
+        var existing = await GetStrat(id);
+        if (existing == null) return false;
+
+        int? mapId = await GetMapIdByName(request.MapName);
+        if (mapId == null)
+            throw new ArgumentException($"Map '{request.MapName}' does not exist");
+
+        existing.Name = request.Name;
+        existing.VideoUrl = request.VideoUrl;
+        existing.MapId = mapId.Value;
+        existing.Description = request.Description;
+
+        return await _dbService.UpdateStrat(existing);
+    }
+
+    /// <summary>
+    /// Partially updates an existing strategy. Only provided values are changed.
+    /// </summary>
+    /// <param name="id">The ID of the strategy to patch.</param>
+    /// <param name="request">The patch request containing optional new values.</param>
+    /// <returns>True if the strategy was found and updated; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when the specified map name does not exist.</exception>
+    public async Task<bool> PatchStrat(int id, StratPatchRequest request)
+    {
+        var existing = await GetStrat(id);
+        if (existing == null) return false;
+
+        if (request.MapName != null)
+        {
+            int? mapId = await GetMapIdByName(request.MapName);
+            if (mapId == null)
+                throw new ArgumentException($"Map '{request.MapName}' does not exist");
+            existing.MapId = mapId.Value;
+        }
+
+        if (request.Name != null)
+            existing.Name = request.Name;
+
+        if (request.VideoUrl != null)
+            existing.VideoUrl = request.VideoUrl;
+
+        if (request.Description != null)
+            existing.Description = request.Description;
+
+        return await _dbService.UpdateStrat(existing);
     }
 
     /// <summary>
@@ -83,20 +164,20 @@ public class StratService
     /// </summary>
     /// <param name="stratId">The ID of the strategy.</param>
     /// <param name="categoryId">The ID of the category.</param>
-    /// <throws cref="ArgumentException">Thrown when either the strategy ID or the category ID is invalid.</throws>
-    public void AssignStratToCategory(int stratId, int categoryId)
+    /// <exception cref="ArgumentException">Thrown when either the strategy ID or the category ID is invalid.</exception>
+    public async Task AssignStratToCategory(int stratId, int categoryId)
     {
-        if (_dbService.GetStratById(stratId) == null)
+        if (await _dbService.GetStratById(stratId) == null)
         {
             throw new ArgumentException($"No strat by id {stratId}");
         }
 
-        if (_dbService.GetCategoryById(categoryId) == null)
+        if (await _dbService.GetCategoryById(categoryId) == null)
         {
             throw new ArgumentException($"No category by id {categoryId}");
         }
-        
-        _dbService.AssignStratToCategory(stratId, categoryId);
+
+        await _dbService.AssignStratToCategory(stratId, categoryId);
     }
 
     /// <summary>
@@ -106,18 +187,28 @@ public class StratService
     /// <returns>A list of <see cref="Strat"/> objects if the category exists; otherwise, null.</returns>
     public async Task<List<Strat>?> GetStratsByCategory(int categoryId)
     {
-        if (_dbService.GetCategoryById(categoryId) == null)
+        if (await _dbService.GetCategoryById(categoryId) == null)
         {
             return null;
         }
         return await _dbService.GetStratsByCategory(categoryId);
     }
 
+    /// <summary>
+    /// Retrieves all strategies that belong to a specific map.
+    /// </summary>
+    /// <param name="mapId">The ID of the map.</param>
+    /// <returns>A list of <see cref="Strat"/> objects for the map.</returns>
     public async Task<List<Strat>?> GetStratsByMapId(int mapId)
     {
         return await _dbService.StratsByMapId(mapId);
     }
 
+    /// <summary>
+    /// Retrieves all strategies that use a specific operator.
+    /// </summary>
+    /// <param name="operatorId">The ID of the operator.</param>
+    /// <returns>A list of <see cref="Strat"/> objects using the operator.</returns>
     public async Task<List<Strat>?> GetStratsByOperatorId(int operatorId)
     {
         return await _dbService.StratsByOperator(operatorId);

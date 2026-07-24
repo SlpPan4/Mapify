@@ -1,11 +1,16 @@
 using MapifyBackend.database_files;
 using MapifyBackend.Utility;
+using MapifyBackend.Utility.Api;
 using MapifyBackend.Utility.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MapifyBackend.Controllers;
 
+/// <summary>
+/// API for public strategy/category submissions and admin review.
+/// Admin endpoints are route-separated but not protected by backend authentication yet.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
@@ -18,156 +23,211 @@ public class SubmissionsController : ControllerBase
         _submissionService = submissionService;
     }
 
+    /// <summary>
+    /// Submits a new strategy for admin approval.
+    /// Selected categories and operators must belong to consistent sides.
+    /// </summary>
+    /// <param name="request">The strategy submission request.</param>
+    /// <returns>The ID of the created pending submission with a Location header.</returns>
     [HttpPost("strats")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult SubmitStrat([FromBody] StratSubmissionRequest request)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> SubmitStrat([FromBody] StratSubmissionRequest request)
     {
         try
         {
             InputValidator.ValidateStratSubmissionRequest(request);
-            int submissionId = _submissionService.SubmitStrat(request);
-            return Ok(new { message = "Strategy submitted for approval", submissionId });
+            int submissionId = await _submissionService.SubmitStrat(request);
+            return Created($"/api/submissions/admin/strats/{submissionId}", ApiResponse.Created(new { submissionId }, "Strategy submitted for approval"));
         }
         catch (ValidationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
         catch (ArgumentException ex)
         {
-            return NotFound(new { error = ex.Message });
+            return NotFound(ApiResponse.NotFound(ex.Message));
         }
         catch (Exception)
         {
-            return BadRequest(new { error = "Error submitting strategy" });
+            return BadRequest(ApiResponse.BadRequest("Error submitting strategy"));
         }
     }
 
+    /// <summary>
+    /// Submits a new category for admin approval.
+    /// </summary>
+    /// <param name="request">The category submission request.</param>
+    /// <returns>The ID of the created pending submission with a Location header.</returns>
     [HttpPost("categories")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult SubmitCategory([FromBody] CategorySubmissionRequest request)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> SubmitCategory([FromBody] CategorySubmissionRequest request)
     {
         try
         {
             InputValidator.ValidateCategorySubmissionRequest(request);
-            int submissionId = _submissionService.SubmitCategory(request);
-            return Ok(new { message = "Category submitted for approval", submissionId });
+            int submissionId = await _submissionService.SubmitCategory(request);
+            return Created($"/api/submissions/admin/categories/{submissionId}", ApiResponse.Created(new { submissionId }, "Category submitted for approval"));
         }
         catch (ValidationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
         catch (Exception)
         {
-            return BadRequest(new { error = "Error submitting category" });
+            return BadRequest(ApiResponse.BadRequest("Error submitting category"));
         }
     }
 
-    // Admin-only endpoints. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// <summary>
+    /// Returns all pending strategy submissions.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <returns>A list of pending strategy submissions.</returns>
     [HttpGet("admin/strats")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StratSubmission>))]
-    public IActionResult GetPendingStrats()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StratSubmission>>))]
+    public async Task<IActionResult> GetPendingStrats()
     {
-        return Ok(_submissionService.GetPendingStratSubmissions());
+        return Ok(ApiResponse.Success(await _submissionService.GetPendingStratSubmissions()));
     }
 
+    /// <summary>
+    /// Returns a pending strategy submission by ID.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The pending strategy submission if found.</returns>
     [HttpGet("admin/strats/{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StratSubmission))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetPendingStrat(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StratSubmission>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetPendingStrat(int id)
     {
-        StratSubmission? submission = _submissionService.GetPendingStratSubmission(id);
+        StratSubmission? submission = await _submissionService.GetPendingStratSubmission(id);
         if (submission == null)
-            return NotFound(new { message = $"Strategy submission by ID {id} was not found" });
+            return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
-        return Ok(submission);
+        return Ok(ApiResponse.Success(submission));
     }
 
+    /// <summary>
+    /// Approves a pending strategy submission and moves it to the public strategies table.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The ID of the newly approved strategy.</returns>
     [HttpPost("admin/strats/{id:int}/approve")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult ApproveStrat(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ApproveStrat(int id)
     {
         try
         {
-            int? stratId = _submissionService.ApproveStratSubmission(id);
+            int? stratId = await _submissionService.ApproveStratSubmission(id);
             if (stratId == null)
-                return NotFound(new { message = $"Strategy submission by ID {id} was not found" });
+                return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
-            return Ok(new { message = "Strategy submission approved", stratId });
+            return Ok(ApiResponse.Success(new { stratId }, "Strategy submission approved"));
         }
         catch (Exception)
         {
-            return BadRequest(new { error = "Error approving strategy submission" });
+            return BadRequest(ApiResponse.BadRequest("Error approving strategy submission"));
         }
     }
 
+    /// <summary>
+    /// Rejects a pending strategy submission.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>A success message if the submission was rejected.</returns>
     [HttpDelete("admin/strats/{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult RejectStrat(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> RejectStrat(int id)
     {
-        if (!_submissionService.RejectStratSubmission(id))
-            return NotFound(new { message = $"Strategy submission by ID {id} was not found" });
+        if (!await _submissionService.RejectStratSubmission(id))
+            return NotFound(ApiResponse.NotFound($"Strategy submission by ID {id} was not found"));
 
-        return Ok(new { message = "Strategy submission rejected" });
+        return Ok(ApiResponse.SuccessMessage("Strategy submission rejected"));
     }
 
-    // Admin-only endpoints. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// <summary>
+    /// Returns all pending category submissions.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <returns>A list of pending category submissions.</returns>
     [HttpGet("admin/categories")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CategorySubmission>))]
-    public IActionResult GetPendingCategories()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CategorySubmission>>))]
+    public async Task<IActionResult> GetPendingCategories()
     {
-        return Ok(_submissionService.GetPendingCategorySubmissions());
+        return Ok(ApiResponse.Success(await _submissionService.GetPendingCategorySubmissions()));
     }
 
+    /// <summary>
+    /// Returns a pending category submission by ID.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The pending category submission if found.</returns>
     [HttpGet("admin/categories/{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CategorySubmission))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetPendingCategory(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CategorySubmission>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetPendingCategory(int id)
     {
-        CategorySubmission? submission = _submissionService.GetPendingCategorySubmission(id);
+        CategorySubmission? submission = await _submissionService.GetPendingCategorySubmission(id);
         if (submission == null)
-            return NotFound(new { message = $"Category submission by ID {id} was not found" });
+            return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
-        return Ok(submission);
+        return Ok(ApiResponse.Success(submission));
     }
 
+    /// <summary>
+    /// Approves a pending category submission and moves it to the public categories table.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>The ID of the newly approved category.</returns>
     [HttpPost("admin/categories/{id:int}/approve")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult ApproveCategory(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ApproveCategory(int id)
     {
         try
         {
-            int? categoryId = _submissionService.ApproveCategorySubmission(id);
+            int? categoryId = await _submissionService.ApproveCategorySubmission(id);
             if (categoryId == null)
-                return NotFound(new { message = $"Category submission by ID {id} was not found" });
+                return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
-            return Ok(new { message = "Category submission approved", categoryId });
+            return Ok(ApiResponse.Success(new { categoryId }, "Category submission approved"));
         }
         catch (Exception)
         {
-            return BadRequest(new { error = "Error approving category submission" });
+            return BadRequest(ApiResponse.BadRequest("Error approving category submission"));
         }
     }
 
+    /// <summary>
+    /// Rejects a pending category submission.
+    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// </summary>
+    /// <param name="id">The pending submission ID.</param>
+    /// <returns>A success message if the submission was rejected.</returns>
     [HttpDelete("admin/categories/{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult RejectCategory(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> RejectCategory(int id)
     {
-        if (!_submissionService.RejectCategorySubmission(id))
-            return NotFound(new { message = $"Category submission by ID {id} was not found" });
+        if (!await _submissionService.RejectCategorySubmission(id))
+            return NotFound(ApiResponse.NotFound($"Category submission by ID {id} was not found"));
 
-        return Ok(new { message = "Category submission rejected" });
+        return Ok(ApiResponse.SuccessMessage("Category submission rejected"));
     }
 }

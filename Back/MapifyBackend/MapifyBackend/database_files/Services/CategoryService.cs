@@ -1,41 +1,74 @@
-﻿using MapifyBackend.Utility.Enums;
+using MapifyBackend.Utility.Enums;
 
 namespace MapifyBackend.database_files;
 
+/// <summary>
+/// Service layer for managing strategy categories.
+/// </summary>
 public class CategoryService
 {
-    private DatabaseService _db;
+    private readonly DatabaseService _db;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CategoryService"/> class.
+    /// </summary>
+    /// <param name="db">The database service used for data persistence.</param>
     public CategoryService(DatabaseService db)
     {
         _db = db;
     }
-    public Category? GetCategoryById(int id)
+
+    /// <summary>
+    /// Retrieves a category by its ID.
+    /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>The category if found; otherwise, null.</returns>
+    public async Task<Category?> GetCategoryById(int id)
     {
-        return _db.GetCategoryById(id);
+        return await _db.GetCategoryById(id);
     }
 
-    public List<Category> GetAllCategories()
+    /// <summary>
+    /// Retrieves all categories in the system.
+    /// </summary>
+    /// <returns>A list of all categories.</returns>
+    public async Task<List<Category>> GetAllCategories()
     {
-        return _db.GetAllCategories();
+        return await _db.GetAllCategories();
     }
-    
-    public void AddCategory(string name, Side side)
+
+    /// <summary>
+    /// Creates a new category.
+    /// </summary>
+    /// <param name="name">The category name.</param>
+    /// <param name="side">The category side (Attack or Defense).</param>
+    /// <returns>The ID of the newly created category.</returns>
+    public async Task<int> AddCategory(string name, Side side)
     {
         Category category = new Category(name, side);
-        _db.AddCategory(category);
+        return await _db.AddCategory(category);
     }
 
-    public bool DeleteCategory(int id)
+    /// <summary>
+    /// Deletes a category by its ID.
+    /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>True if the category was found and deleted; otherwise, false.</returns>
+    public async Task<bool> DeleteCategory(int id)
     {
-        if (GetCategoryById(id) == null) return false;
-        
-        _db.DeleteCategory(id);
+        if (await GetCategoryById(id) == null) return false;
+
+        await _db.DeleteCategory(id);
         return true;
     }
 
-    public string? GetCategoryNameById(int id)
+    /// <summary>
+    /// Retrieves the name of a category by its ID.
+    /// </summary>
+    /// <param name="id">The category ID.</param>
+    /// <returns>The category name if found; otherwise, null.</returns>
+    public async Task<string?> GetCategoryNameById(int id)
     {
-        return _db.GetCategoryNameById(id);
+        return await _db.GetCategoryNameById(id);
     }
 }
