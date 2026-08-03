@@ -8,8 +8,7 @@ from states import *
 from handlers.start import start_command
 from handlers.helpers import cancel_command,help_command,error
 from handlers.strats import strats_command, handle_strat_input, handle_operator
-
-
+from handlers.post import post_strat_command,handle_post_input, get_post_operator, handle_post_operator,get_post_strat_link,handle_post_strat_link,get_post_description,handle_post_description, assemble_post,get_post_strat_name,handle_post_strat_name
 
 # inline keyboard (no logic yet)
 """
@@ -39,7 +38,8 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[
             # CommandHandler("start", start_command),
-            CommandHandler("strats", strats_command)
+            CommandHandler("strats", strats_command),
+            CommandHandler("your_strat", post_strat_command)
             ],
         states={
             # WAITING_START: [
@@ -53,7 +53,31 @@ def main():
             WAITING_FOR_OPERATOR: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, 
                                handle_operator)
-            ]
+            ],
+            WAITING_FOR_MAP_POST_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               handle_post_input)
+                ],
+            WAITING_FOR_POST_OPERATOR: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               handle_post_operator)
+                ],
+            WAITING_FOR_STRAT_LINK_POST: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               handle_post_strat_link)
+                ],
+            WAITING_FOR_POST_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               handle_post_strat_name)
+                ],
+
+            WAITING_FOR_POST_DESCRIPTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND,
+                               handle_post_description)
+                ],
+
+
+ 
         },
         fallbacks=[CommandHandler("cancel", cancel_command)]
     )
@@ -66,6 +90,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("strats", strats_command))
+    app.add_handler(CommandHandler("your_strat", post_strat_command))
 
 
     # errors

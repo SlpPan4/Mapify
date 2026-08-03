@@ -12,6 +12,7 @@ async def show_main_menu(update:Update):
 
 🛑 Please, select one of the available options to continue
     /strats -- available strategies for specific maps
+    /your_strat -- suggest your own strategy
     /help -- FAQ
             """.strip()
     
