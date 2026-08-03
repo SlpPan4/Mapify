@@ -29,9 +29,9 @@ public class SubmissionService
     /// <exception cref="ValidationException">Thrown when selected categories or operators have mismatched sides.</exception>
     public async Task<int> SubmitStrat(StratSubmissionRequest request)
     {
-        int? mapId = await _db.GetMapIdByName(request.MapName);
-        if (mapId == null)
-            throw new ArgumentException($"Map '{request.MapName}' does not exist");
+        Map? map = await _db.GetMapById(request.MapId);
+        if (map == null)
+            throw new ArgumentException($"Map by id {request.MapId} does not exist");
 
         List<int> categoryIds = request.CategoryIds.Distinct().ToList();
         foreach (int categoryId in categoryIds)
@@ -74,7 +74,7 @@ public class SubmissionService
         StratSubmission submission = new StratSubmission(
             request.Name,
             request.VideoUrl,
-            mapId.Value,
+            request.MapId,
             request.Description,
             categoryIds,
             operatorIds);

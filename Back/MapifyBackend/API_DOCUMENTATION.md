@@ -781,7 +781,7 @@ Request:
 {
   "name": "Oregon attic execute",
   "videoUrl": "https://youtube.com/watch?v=example",
-  "mapName": "Oregon",
+  "mapId": 1,
   "description": "Open attic wall and plant behind half wall.",
   "categoryIds": [1, 2],
   "operatorIds": [1, 4]
@@ -839,7 +839,7 @@ Response `404 Not Found`:
   "status": 404,
   "data": null,
   "message": null,
-  "error": "Map 'Unknown' does not exist"
+  "error": "Map by id 999 does not exist"
 }
 ```
 

@@ -141,7 +141,7 @@ See `API_DOCUMENTATION.md` for full request/response details.
 - Use the existing namespace style: `MapifyBackend.<folder>`.
 - Entity/DTO property names use PascalCase. Some JSON output uses camelCase aliases mapped via Dapper (`videoUrl`, `mapId`, etc.). Entity properties have public setters so they can be both mapped by Dapper and round-tripped through `System.Text.Json` in integration tests.
 - The `Side` enum is serialized as a JSON string (`Attack`, `Defense`).
-- Map names are normalized with `StringHelper.Capitalize` in request DTOs (`StratRequest`, `StratSubmissionRequest`).
+- Map names are normalized with `StringHelper.Capitalize` in request DTOs (`StratRequest`). Public submissions use `MapId` instead.
 - All database I/O in `DatabaseService` and the service layer is asynchronous (`async`/`await`). Match the existing pattern when adding new data-access methods.
 - Controllers return `IActionResult` and wrap errors in anonymous objects like `new { error = "..." }` or `new { message = "..." }`.
 

@@ -71,7 +71,9 @@ public static class InputValidator
     {
         ValidateString(request.Name, "Name", 100);
         ValidateString(request.VideoUrl, "VideoUrl", 500);
-        ValidateString(request.MapName, "MapName", 100);
+
+        if (request.MapId <= 0)
+            throw new ValidationException("MapId must be a positive ID");
 
         if (request.Description is { Length: > 1000 })
             throw new ValidationException("Description must be less than 1000 characters");

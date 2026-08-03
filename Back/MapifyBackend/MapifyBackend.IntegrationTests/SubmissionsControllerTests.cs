@@ -30,7 +30,6 @@ public class SubmissionsControllerTests : ControllerTestsBase
         {
             Name = "",
             VideoUrl = "",
-            MapName = "Oregon",
             CategoryIds = [],
             OperatorIds = []
         };
@@ -44,7 +43,7 @@ public class SubmissionsControllerTests : ControllerTestsBase
     public async Task SubmitStrat_MapNotFound_ReturnsNotFound()
     {
         var request = CreateValidStratSubmissionRequest();
-        request.MapName = "NonExistent";
+        request.MapId = 9999;
 
         var response = await Client.PostAsJsonAsync("/api/submissions/strats", request);
 
@@ -318,7 +317,7 @@ public class SubmissionsControllerTests : ControllerTestsBase
         {
             Name = $"TestSubmissionStrat_{Guid.NewGuid()}",
             VideoUrl = "https://example.com",
-            MapName = "Oregon",
+            MapId = 1,
             Description = "Test description",
             CategoryIds = [1],
             OperatorIds = [1]
