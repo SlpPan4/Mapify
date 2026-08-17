@@ -6,7 +6,7 @@ all_maps = ["calypso","border","kafe","chalet","clubhouse",
 
 
 maps_keyboard_buttons= [[all_maps[10],all_maps[11],all_maps[4],"cancel"]]
-start_keyboard_buttons = [["/strats","/help"]]
+start_keyboard_buttons = [["/strats","/your_strat","/help"]]
 
 def start_keyboard():
 
