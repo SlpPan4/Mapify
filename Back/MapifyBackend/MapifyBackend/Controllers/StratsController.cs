@@ -65,6 +65,18 @@ public class StratsController : ControllerBase
     }
 
     /// <summary>
+    /// Returns all strategies enriched with map, side, categories, and operators.
+    /// </summary>
+    /// <returns>A list of enriched strategy summaries.</returns>
+    [HttpGet("summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StratSummary>>))]
+    public async Task<IActionResult> GetSummary()
+    {
+        var summary = await _stratService.GetStratsSummary();
+        return Ok(ApiResponse.Success(summary));
+    }
+
+    /// <summary>
     /// Returns a map by ID.
     /// </summary>
     /// <param name="id">The map ID.</param>
@@ -226,6 +238,24 @@ public class StratsController : ControllerBase
         {
             return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Removes a category assignment from a strategy.
+    /// </summary>
+    /// <param name="stratId">The strategy ID.</param>
+    /// <param name="categoryId">The category ID.</param>
+    /// <returns>A success message if the relation was removed.</returns>
+    [HttpDelete("{stratId}/categories/{categoryId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> RemoveCategoryFromStrat(int stratId, int categoryId)
+    {
+        bool removed = await _db.RemoveCategoryFromStrat(stratId, categoryId);
+        if (!removed)
+            return NotFound(ApiResponse.NotFound("Category assignment not found"));
+
+        return Ok(ApiResponse.SuccessMessage("Category removed from strat"));
     }
 
     /// <summary>

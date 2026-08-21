@@ -77,6 +77,15 @@ public class StratService
     }
 
     /// <summary>
+    /// Retrieves all strategies enriched with map, side, categories, and operators.
+    /// </summary>
+    /// <returns>A list of <see cref="StratSummary"/> objects.</returns>
+    public async Task<List<StratSummary>> GetStratsSummary()
+    {
+        return await _dbService.GetStratsSummary();
+    }
+
+    /// <summary>
     /// Retrieves strategies filtered by optional criteria.
     /// </summary>
     /// <param name="name">Optional case-insensitive substring match on strategy name.</param>

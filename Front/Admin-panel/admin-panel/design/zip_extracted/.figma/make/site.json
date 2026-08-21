@@ -1,0 +1,10 @@
+{
+  "description": "Manage and moderate content for a Rainbow Six Siege strategy database with an intuitive dark-themed dashboard, enhancing user experience and efficiency.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
