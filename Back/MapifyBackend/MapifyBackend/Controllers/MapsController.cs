@@ -13,11 +13,11 @@ namespace MapifyBackend.Controllers;
 [Produces("application/json")]
 public class MapsController : ControllerBase
 {
-    private readonly DatabaseService _db;
+    private readonly MapService _mapService;
 
-    public MapsController(DatabaseService db)
+    public MapsController(MapService mapService)
     {
-        _db = db;
+        _mapService = mapService;
     }
 
     /// <summary>
@@ -28,7 +28,7 @@ public class MapsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<Map>>))]
     public async Task<IActionResult> GetAll()
     {
-        var maps = await _db.GetAllMaps();
+        var maps = await _mapService.GetAllMaps();
         return Ok(ApiResponse.Success(maps));
     }
 }

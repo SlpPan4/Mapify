@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SideBadge from '../components/SideBadge.vue'
 import StratFormModal from '../components/StratFormModal.vue'
+import VideoPlayer from '../components/VideoPlayer.vue'
 import { useToast } from '../composables/useToast.js'
 import {
   getStratById,
@@ -186,23 +187,7 @@ onMounted(() => {
 
         <div v-if="strat.videoUrl" class="bg-[#1C1C1F] border border-[#2A2A2E] rounded p-5">
           <div class="text-[11px] tracking-[0.18em] uppercase mb-2 text-[#9CA3AF]" style="font-family: 'Rajdhani', sans-serif; font-weight: 600;">Video Reference</div>
-          <div class="relative w-full aspect-video bg-[#0B0B0C] border border-[#2A2A2E] rounded overflow-hidden flex items-center justify-center group cursor-pointer">
-            <div class="absolute inset-0 bg-gradient-to-br from-[#1C1C1F] to-[#0B0B0C]" />
-            <div class="absolute inset-0 opacity-[0.04]" style="background-image: linear-gradient(#DC2626 1px, transparent 1px), linear-gradient(90deg, #DC2626 1px, transparent 1px); background-size: 32px 32px;" />
-            <div class="relative flex flex-col items-center gap-3">
-              <a
-                :href="strat.videoUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="w-14 h-14 rounded-full bg-[rgba(220,38,38,0.15)] border border-[rgba(220,38,38,0.3)] flex items-center justify-center hover:bg-[rgba(220,38,38,0.25)] transition-colors group-hover:scale-105"
-              >
-                <svg class="w-6 h-6 text-[#DC2626] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </a>
-              <span class="text-[#9CA3AF] text-xs font-mono">Click to open video</span>
-            </div>
-          </div>
+          <VideoPlayer :url="strat.videoUrl" />
           <a
             :href="strat.videoUrl"
             target="_blank"

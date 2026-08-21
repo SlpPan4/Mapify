@@ -2,11 +2,9 @@
 
 > Этот файл создан для восстановления работы в новой сессии. Если сессия прервалась, начни отсюда.
 
-## Статус: основная реализация завершена
+## Статус: основная реализация завершена + VideoPlayer + фиксы
 
-Frontend и backend успешно собираются и запускаются. Оба сервера запущены в фоне:
-- Backend: `http://localhost:5000`
-- Frontend dev server: `http://localhost:5173`
+Frontend и backend успешно собираются. Серверы могут быть запущены вручную (см. команды ниже).
 
 ## Что сделано
 
@@ -15,6 +13,7 @@ Frontend и backend успешно собираются и запускаютс�
 - `DatabaseService.RemoveCategoryFromStrat()` + `StratsController` → `DELETE /api/strats/{id}/categories/{catId}`
 - `DatabaseService.GetStratsSummary()` + `StratsController` → `GET /api/strats/summary`
 - DTO `StratSummary.cs`
+- **FIX:** `StratRequest` теперь принимает `Description`, и `StratService.CreateStrat` сохраняет её в БД.
 
 ### Frontend (admin-panel)
 - Зависимости: Tailwind CSS v4, Vue Router.
@@ -22,7 +21,18 @@ Frontend и backend успешно собираются и запускаютс�
 - API-клиент и модули для всех сущностей.
 - Layout: Sidebar, Header, Toast.
 - Views: Dashboard, Pending Submissions, Strats, Strat Detail, Categories, Operators (placeholder), Maps (placeholder).
-- Компоненты: SideBadge, StatusBadge, SubmissionDetailSlideOver, StratFormModal, CategoryFormModal, PlaceholderPage.
+- Компоненты: SideBadge, StatusBadge, SubmissionDetailSlideOver, StratFormModal, CategoryFormModal, PlaceholderPage, VideoPlayer.
+- **FIX:** Уведомления в Header теперь реальные — формируются из pending strat/category submissions с относительным временем. Красная точка показывается только при наличии уведомлений.
+- **VideoPlayer** — универсальный компонент для проигрывания видео из YouTube, TikTok, Instagram и прямых ссылок (mp4/webm/ogg/mov). Используется в Strat Detail и Submission Detail Slide-over.
+
+### Frontend (admin-panel)
+- Зависимости: Tailwind CSS v4, Vue Router.
+- Роутинг: `/dashboard`, `/pending`, `/strats`, `/strats/:id`, `/categories`, `/operators`, `/maps`.
+- API-клиент и модули для всех сущностей.
+- Layout: Sidebar, Header, Toast.
+- Views: Dashboard, Pending Submissions, Strats, Strat Detail, Categories, Operators (placeholder), Maps (placeholder).
+- Компоненты: SideBadge, StatusBadge, SubmissionDetailSlideOver, StratFormModal, CategoryFormModal, PlaceholderPage, VideoPlayer.
+- **VideoPlayer** — универсальный компонент для проигрывания видео из YouTube, TikTok, Instagram и прямых ссылок (mp4/webm/ogg/mov). Используется в Strat Detail и Submission Detail Slide-over.
 
 ## Проверка
 

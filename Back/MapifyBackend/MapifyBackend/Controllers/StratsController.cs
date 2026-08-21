@@ -16,13 +16,13 @@ namespace MapifyBackend.Controllers;
 [Produces("application/json")]
 public class StratsController : ControllerBase
 {
-    private readonly DatabaseService _db;
     private readonly StratService _stratService;
+    private readonly MapService _mapService;
 
-    public StratsController(DatabaseService db, StratService stratService)
+    public StratsController(StratService stratService, MapService mapService)
     {
-        _db = db;
         _stratService = stratService;
+        _mapService = mapService;
     }
 
     /// <summary>
@@ -87,18 +87,11 @@ public class StratsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetMapById(int id)
     {
-        try
-        {
-            Map? map = await _db.GetMapById(id);
-            if (map == null)
-                return NotFound(ApiResponse.NotFound($"Map by id {id} not found"));
+        Map? map = await _mapService.GetMapById(id);
+        if (map == null)
+            return NotFound(ApiResponse.NotFound($"Map by id {id} not found"));
 
-            return Ok(ApiResponse.Success(map));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiResponse.BadRequest(ex.Message));
-        }
+        return Ok(ApiResponse.Success(map));
     }
 
     /// <summary>
@@ -115,7 +108,7 @@ public class StratsController : ControllerBase
         try
         {
             InputValidator.ValidateStratRequest(request);
-            int stratId = await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName);
+            int stratId = await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName, request.Description);
             return Created($"/api/strats/{stratId}", ApiResponse.Created(new { stratId }, "Strategy added!"));
         }
         catch (ValidationException ex)
@@ -251,7 +244,7 @@ public class StratsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> RemoveCategoryFromStrat(int stratId, int categoryId)
     {
-        bool removed = await _db.RemoveCategoryFromStrat(stratId, categoryId);
+        bool removed = await _stratService.RemoveCategoryFromStrat(stratId, categoryId);
         if (!removed)
             return NotFound(ApiResponse.NotFound("Category assignment not found"));
 

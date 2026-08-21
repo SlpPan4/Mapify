@@ -215,6 +215,49 @@ Response `404 Not Found`:
 }
 ```
 
+### Get Strats Summary
+
+`GET /api/strats/summary`
+
+Returns all strategies enriched with their map, derived side, categories, and operators. Useful for list views in the admin panel.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Cool Ash Rush",
+      "videoUrl": "youtube.com",
+      "description": "",
+      "map": {
+        "id": 7,
+        "name": "Coastline"
+      },
+      "side": "Attack",
+      "categories": [
+        {
+          "id": 1,
+          "name": "Rush",
+          "side": "Attack"
+        }
+      ],
+      "operators": [
+        {
+          "id": 1,
+          "name": "Ash",
+          "side": "Attack"
+        }
+      ]
+    }
+  ],
+  "message": null,
+  "error": null
+}
+```
+
 ### Create Strat Directly
 
 `POST /api/strats`
@@ -227,9 +270,12 @@ Request:
 {
   "name": "Oregon rush",
   "videoUrl": "https://youtube.com/watch?v=example",
-  "mapName": "Oregon"
+  "mapName": "Oregon",
+  "description": "Push through attic and plant behind half wall."
 }
 ```
+
+All fields except `description` are required.
 
 Response `201 Created`:
 
@@ -393,6 +439,34 @@ Response `400 Bad Request`:
 }
 ```
 
+### Remove Category From Strat
+
+`DELETE /api/strats/{stratId}/categories/{categoryId}`
+
+Removes a category assignment from a strategy.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Category removed from strat",
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Category assignment not found"
+}
+```
+
 ### Get Strats By Category
 
 `GET /api/strats/category/{id}`
@@ -479,6 +553,36 @@ Response `404 Not Found`:
   "data": null,
   "message": null,
   "error": "No maps found with such name Unknown"
+}
+```
+
+## Maps
+
+Base route: `/api/maps`
+
+### Get All Maps
+
+`GET /api/maps`
+
+Returns every map in the system.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Oregon"
+    },
+    {
+      "id": 2,
+      "name": "Bank"
+    }
+  ],
+  "message": null,
+  "error": null
 }
 ```
 
@@ -1114,9 +1218,11 @@ Read endpoints:
 
 - `GET /api/strats`
 - `GET /api/strats/{id}`
+- `GET /api/strats/summary`
 - `GET /api/strats/category/{id}`
 - `GET /api/strats/maps/{id}`
 - `GET /api/strats/maps/byname/{mapName}`
+- `GET /api/maps`
 - `GET /api/categories`
 - `GET /api/categories/{id}`
 - `GET /api/categories/category_name/{id}`
@@ -1136,6 +1242,7 @@ Trusted/admin mutation endpoints:
 - `PATCH /api/strats/{id}`
 - `DELETE /api/strats/{id}`
 - `POST /api/strats/assign/strat/{stratId}/category/{categoryId}`
+- `DELETE /api/strats/{stratId}/categories/{categoryId}`
 - `POST /api/categories`
 - `DELETE /api/categories/{id}`
 - `POST /api/operators/{operatorId}/assign/{stratId}`

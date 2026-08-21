@@ -26,6 +26,7 @@ MapifyBackend/
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # ASP.NET Core API controllers
 │   ├── CategoriesController.cs
+│   ├── MapsController.cs
 │   ├── OperatorsController.cs
 │   ├── StratsController.cs
 │   └── SubmissionsController.cs
@@ -42,6 +43,7 @@ MapifyBackend/
 │   │   └── StratSubmission.cs
 │   └── Services/                           # Thin service layer
 │       ├── CategoryService.cs
+│       ├── MapService.cs
 │       ├── OperatorService.cs
 │       ├── StratService.cs
 │       └── SubmissionService.cs
@@ -76,7 +78,7 @@ MapifyBackend.IntegrationTests/
 ### Dependency Injection Lifetimes
 
 - `DatabaseService` — Singleton
-- `StratService`, `CategoryService`, `OperatorService`, `SubmissionService` — Scoped
+- `StratService`, `CategoryService`, `MapService`, `OperatorService`, `SubmissionService` — Scoped
 
 ## Build, Run, and Test
 
@@ -126,7 +128,8 @@ New controller tests should follow the existing pattern in `MapifyBackend.Integr
 
 All controllers live under `/api`:
 
-- `/api/strats` — read/create/delete strats, get strats by category/map/operator, assign categories
+- `/api/strats` — read/create/delete strats, get strats by category/map/operator, assign/remove categories, enriched summaries
+- `/api/maps` — read all maps
 - `/api/categories` — read/create/delete categories
 - `/api/operators` — read operators, assign/remove operators from strats
 - `/api/submissions` — public user submissions

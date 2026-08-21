@@ -327,4 +327,71 @@ public class StratsControllerTests : ControllerTestsBase
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetSummary_ReturnsEnrichedStrats()
+    {
+        var response = await Client.GetAsync("/api/strats/summary");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.ReadApiResponseAsync<List<StratSummary>>();
+        Assert.NotNull(result);
+        Assert.NotNull(result.Data);
+        Assert.NotEmpty(result.Data);
+
+        var strat = result.Data.FirstOrDefault(s => s.Id == 1);
+        Assert.NotNull(strat);
+        Assert.Equal("Cool Ash Rush", strat.Name);
+        Assert.NotNull(strat.Map);
+        Assert.Equal("Coastline", strat.Map.Name);
+        Assert.Contains(strat.Categories, c => c.Name == "Rush");
+        Assert.Contains(strat.Operators, o => o.Name == "Ash");
+    }
+
+    [Fact]
+    public async Task RemoveCategoryFromStrat_Existing_ReturnsSuccess()
+    {
+        var response = await Client.DeleteAsync("/api/strats/1/categories/1");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("Category removed from strat", result.Message);
+    }
+
+    [Fact]
+    public async Task RemoveCategoryFromStrat_NonExisting_ReturnsNotFound()
+    {
+        var response = await Client.DeleteAsync("/api/strats/1/categories/9999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithDescription_SavesDescription()
+    {
+        var request = new StratRequest
+        {
+            Name = "Description Test Strat",
+            VideoUrl = "https://example.com/description",
+            MapName = "Oregon",
+            Description = "This description should be persisted"
+        };
+
+        var createResponse = await Client.PostAsJsonAsync("/api/strats", request);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var createResult = await createResponse.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(createResult);
+        Assert.NotNull(createResult.Data);
+
+        int stratId = ((System.Text.Json.JsonElement)createResult.Data).GetProperty("stratId").GetInt32();
+
+        var getResponse = await Client.GetAsync($"/api/strats/{stratId}");
+        getResponse.EnsureSuccessStatusCode();
+        var getResult = await getResponse.ReadApiResponseAsync<StratDetail>();
+        Assert.NotNull(getResult);
+        Assert.NotNull(getResult.Data);
+        Assert.Equal("This description should be persisted", getResult.Data.Description);
+    }
 }

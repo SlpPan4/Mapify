@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import SideBadge from './SideBadge.vue'
 import StatusBadge from './StatusBadge.vue'
+import VideoPlayer from './VideoPlayer.vue'
 
 const props = defineProps({
   submission: Object,
@@ -98,22 +99,18 @@ function handleReject() {
 
         <div v-if="submission.videoUrl">
           <div class="text-[10px] font-mono text-[#9CA3AF] uppercase tracking-widest mb-2">Video Reference</div>
-          <div class="bg-[#1C1C1F] border border-[#2A2A2E] rounded p-3 flex items-center gap-3">
-            <div class="w-8 h-8 bg-[rgba(220,38,38,0.15)] rounded flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4 text-[#DC2626]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <a
-              :href="submission.videoUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-[#60A5FA] text-sm underline underline-offset-2 hover:text-blue-300 transition-colors truncate"
-            >
-              {{ submission.videoUrl }}
-            </a>
-          </div>
+          <VideoPlayer :url="submission.videoUrl" />
+          <a
+            :href="submission.videoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 text-[#60A5FA] text-sm hover:text-blue-300 transition-colors mt-3"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            <span class="truncate">{{ submission.videoUrl }}</span>
+          </a>
         </div>
 
         <div v-if="categoryNames.length > 0">

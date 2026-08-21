@@ -26,14 +26,14 @@ public class StratService
     /// <param name="videoUrl">The URL of the strategy's video guide.</param>
     /// <param name="mapName">The name of the map this strategy belongs to.</param>
     /// <exception cref="ArgumentException">Thrown when the specified map name does not exist in the database.</exception>
-    public async Task<int> CreateStrat(string name, string videoUrl, string mapName)
+    public async Task<int> CreateStrat(string name, string videoUrl, string mapName, string? description = null)
     {
         int? mapId = await GetMapIdByName(mapName);
 
         if (mapId == null)
             throw new ArgumentException($"Map '{mapName}' does not exist");
 
-        Strat strat = new Strat(name, videoUrl, mapId.Value);
+        Strat strat = new Strat(name, videoUrl, mapId.Value, description);
         return await _dbService.AddStrat(strat);
     }
 
@@ -221,5 +221,16 @@ public class StratService
     public async Task<List<Strat>?> GetStratsByOperatorId(int operatorId)
     {
         return await _dbService.StratsByOperator(operatorId);
+    }
+
+    /// <summary>
+    /// Removes a category assignment from a strategy.
+    /// </summary>
+    /// <param name="stratId">The ID of the strategy.</param>
+    /// <param name="categoryId">The ID of the category.</param>
+    /// <returns>True if the relation existed and was removed; otherwise, false.</returns>
+    public async Task<bool> RemoveCategoryFromStrat(int stratId, int categoryId)
+    {
+        return await _dbService.RemoveCategoryFromStrat(stratId, categoryId);
     }
 }

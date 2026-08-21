@@ -3,6 +3,12 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const props = defineProps({
+  notifications: {
+    type: Array,
+    default: () => [],
+  },
+})
 const emit = defineEmits(['refresh'])
 
 const notifOpen = ref(false)
@@ -22,12 +28,6 @@ const title = computed(() => {
   }
   return pageTitles[route.path] || 'Mapify Admin'
 })
-
-const notifications = [
-  { text: 'New strat submission from SiegeProGamer', time: '9 min ago' },
-  { text: 'DefenseKing99 submitted Bank CEO Anchor Hold', time: '32 min ago' },
-  { text: '3 submissions pending review', time: '1 hr ago' },
-]
 </script>
 
 <template>
@@ -53,7 +53,10 @@ const notifications = [
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
-          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#DC2626] rounded-full ring-1 ring-[#141416]" />
+          <span
+            v-if="notifications.length > 0"
+            class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#DC2626] rounded-full ring-1 ring-[#141416]"
+          />
         </button>
 
         <div v-if="notifOpen" class="fixed inset-0 z-40" @click="notifOpen = false"></div>
