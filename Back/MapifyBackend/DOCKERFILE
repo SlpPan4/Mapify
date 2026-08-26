@@ -1,0 +1,9 @@
+FROM alpine:3.18
+COPY . /app
+WORKDIR /app
+
+RUN apt update && apt install -y dotnet-sdk dotnet-runtime aspnet-runtime aspnetcore-runtime
+RUN dotnet build
+RUN dotnet run
+
+EXPOSE 5000

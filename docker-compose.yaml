@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ./Back/MapifyBackend
+      dockerfile: DOCKERFILE
+    ports:
+      - "5000:5000"
+    networks:
+      - mapify-network
+
+  frontend:
+    build:
+      context: ./Front/Admin-panel
+      dockerfile: DOCKERFILE
+    ports:
+      - "5173:5173"
+    networks:
+      - mapify-network
+
+networks:
+  mapify-network:
