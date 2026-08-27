@@ -1,0 +1,8 @@
+**/bin
+**/obj
+**/.git
+**/.gitignore
+**/*.md
+**/*.db
+**/*.db-journal
+**/.vs

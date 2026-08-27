@@ -15,8 +15,8 @@ public class DatabaseService
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseService"/> class.
     /// </summary>
-    /// <param name="connectionString">The SQLite connection string. Defaults to "Data Source=database.db".</param>
-    public DatabaseService(string connectionString = "Data Source=database.db")
+    /// <param name="connectionString">The SQLite connection string.</param>
+    public DatabaseService(string connectionString)
     {
         _connectionString = connectionString;
     }

@@ -1,0 +1,6 @@
+node_modules
+admin-panel/node_modules
+dist
+.git
+.gitignore
+*.md

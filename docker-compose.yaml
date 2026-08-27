@@ -5,8 +5,19 @@ services:
       dockerfile: DOCKERFILE
     ports:
       - "5000:5000"
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__Default=Data Source=/app/data/database.db
+    volumes:
+      - backend-data:/app/data
     networks:
       - mapify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/strats"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   frontend:
     build:
@@ -14,8 +25,17 @@ services:
       dockerfile: DOCKERFILE
     ports:
       - "5173:5173"
+    volumes:
+      - ./Front/Admin-panel/admin-panel:/app/admin-panel
+      - /app/admin-panel/node_modules
     networks:
       - mapify-network
+    depends_on:
+      backend:
+        condition: service_healthy
 
 networks:
   mapify-network:
+
+volumes:
+  backend-data:
