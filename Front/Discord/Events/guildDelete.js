@@ -1,32 +1,101 @@
-import client from '../index.js';
-import { Events, EmbedBuilder } from 'discord.js';
+import {
+    Events,
+    EmbedBuilder
+} from 'discord.js';
 
-client.on(Events.GuildDelete, async (guild) => {
-    const joinEmbed = new EmbedBuilder()
-        .setColor('#df0922')
-        .setTitle('🔴 | Left a server')
-        .setThumbnail(`${guild.iconURL()}`)
-        .setDescription(`:eye: -> ${guild.name}`)
-        .addFields(
-            { name: 'ID', value: guild.id },
-            { name: 'Members', value: String(guild.memberCount) }, // fixed
-            { name: 'Owner ID', value: guild.ownerId },
-        )
-        .setTimestamp()
+export default {
 
-    const channelId = '1446991723384279134';
+    name: Events.GuildDelete,
 
-    try {
-        const channel = await client.channels.fetch(channelId);
+    once: false,
 
-        if (!channel?.isTextBased()) {
-            console.log('Not a text channel');
-            return;
+    async execute(guild) {
+
+        const leaveEmbed = new EmbedBuilder()
+
+            .setColor('#df0922')
+
+            .setTitle('Mapify left a server')
+
+            .setThumbnail(
+                guild.iconURL() || null
+            )
+
+            .setDescription(
+                `:eye: -> ${guild.name}`
+            )
+
+            .addFields(
+
+                {
+                    name: 'ID',
+                    value: guild.id
+                },
+
+                {
+                    name: 'Members',
+                    value: String(
+                        guild.memberCount ?? 0
+                    )
+                },
+
+                {
+                    name: 'Owner ID',
+                    value: guild.ownerId ?? 'Unknown'
+                }
+
+            )
+
+            .setTimestamp();
+
+
+        const channelId =
+            '1446991723384279134';
+
+
+        try {
+
+            const channel =
+                await guild.client.channels.fetch(
+                    channelId
+                );
+
+
+            if (
+                !channel ||
+                !channel.isTextBased()
+            ) {
+
+                console.log(
+                    'Not a text channel'
+                );
+
+                return;
+
+            }
+
+
+            await channel.send(
+                '<@594130786672836611>'
+            );
+
+
+            await channel.send({
+                embeds: [
+                    leaveEmbed
+                ]
+            });
+
+
+        } catch (err) {
+
+            console.error(
+                'Error sending guild leave message:',
+                err
+            );
+
         }
-        await channel.send('<@594130786672836611>')
-        await channel.send({ embeds: [joinEmbed] });
 
-    } catch (err) {
-        console.error('Error sending message:', err);
     }
-});
+
+};
