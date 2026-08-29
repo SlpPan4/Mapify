@@ -1,5 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+
 export default {
     data: new SlashCommandBuilder()
         .setName('strat-add')
@@ -32,7 +34,7 @@ export default {
         // ⚡ Важно: map это integer
         const mapId = interaction.options.getInteger('map');
 
-        const res = await fetch('http://localhost:5000/api/strats/', {
+        const res = await fetch(`${API_BASE}/api/strats/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

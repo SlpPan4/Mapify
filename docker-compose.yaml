@@ -42,6 +42,21 @@ services:
       backend:
         condition: service_healthy
 
+  discord-bot:
+    build:
+      context: ./Front/Discord
+      dockerfile: DOCKERFILE
+    env_file:
+      - ./Front/Discord/.env
+    environment:
+      - API_BASE_URL=http://backend:5000
+    restart: unless-stopped
+    networks:
+      - mapify-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
 networks:
   mapify-network:
 

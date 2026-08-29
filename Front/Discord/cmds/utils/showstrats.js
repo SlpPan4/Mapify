@@ -1,5 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+
 export default {
     data: new SlashCommandBuilder()
         .setName('strats-list')
@@ -7,13 +9,13 @@ export default {
 
     async execute(interaction) {
 
-        const req = await fetch('http://localhost:5000/api/strats/');
+        const req = await fetch(`${API_BASE}/api/strats/`);
         const strats = await req.json();
 
         const grouped = {};
 
         for (const strat of strats) {
-            const mapReq = await fetch(`http://localhost:5000/api/strats/maps/${strat.mapId}`);
+            const mapReq = await fetch(`${API_BASE}/api/strats/maps/${strat.mapId}`);
             const map = await mapReq.json();
 
             if (!grouped[map.name]) {

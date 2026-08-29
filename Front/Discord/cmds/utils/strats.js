@@ -1,5 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+
 export default {
     data: new SlashCommandBuilder()
         .setName('strats')
@@ -17,7 +19,7 @@ export default {
 
         const id = interaction.options.getInteger('id');
 
-        const strats = await fetch('http://localhost:5000/api/strats/');
+        const strats = await fetch(`${API_BASE}/api/strats/`);
         const data = await strats.json();
 
         const strat = data.find(item => item.id === id);
@@ -29,7 +31,7 @@ export default {
             });
         }
 
-        const map = await fetch(`http://localhost:5000/api/strats/maps/${strat.mapId}`);
+        const map = await fetch(`${API_BASE}/api/strats/maps/${strat.mapId}`);
         const maps = await map.json();
 
         let dickins = strat.description || 'No description set.';

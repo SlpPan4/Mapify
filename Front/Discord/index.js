@@ -1,6 +1,19 @@
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
-import TOKEN from './authds.json' with {"type": "json"};
-import USERID from './authds.json' with {"type": "json"};
+
+// Локально подхватывает .env; в Docker переменные приходят от docker compose
+try {
+  process.loadEnvFile();
+} catch {
+  // .env отсутствует — берём переменные из окружения
+}
+
+const tokends = process.env.DISCORD_TOKEN;
+const userid = process.env.DISCORD_CLIENT_ID;
+
+if (!tokends || !userid) {
+  console.error('DISCORD_TOKEN and DISCORD_CLIENT_ID must be set (via .env or environment).');
+  process.exit(1);
+}
 // import request from 'request';
 
 import fs from 'fs';
@@ -10,8 +23,6 @@ import path from 'path';
 
 
 // Dz
-const {tokends} = TOKEN;
-const {userid} = USERID;
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
