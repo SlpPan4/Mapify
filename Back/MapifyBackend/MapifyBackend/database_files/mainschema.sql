@@ -1,4 +1,4 @@
-﻿PRAGMA FOREIGN_KEYS = ON;
+PRAGMA FOREIGN_KEYS = ON;
 
 CREATE TABLE IF NOT EXISTS maps (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -137,4 +137,29 @@ VALUES (1, 1),
 INSERT OR IGNORE INTO strat_operators(strat_id, operator_id)
 VALUES (1, 1),
        (2, 4),
-       (3, 6)
+       (3, 6);
+
+-- Seed pending strat submissions for admin testing
+INSERT OR IGNORE INTO pending_strat_submissions(id, name, video_url, map_id, description)
+VALUES (1, 'Nokk silent push', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 1, 'Flank with Nokk and catch defenders off guard on Oregon.'),
+       (2, 'Buck vertical clear', 'https://www.youtube.com/watch?v=9bZkp7q19f0', 2, 'Use Buck skeleton key to clear out common defender positions from above.'),
+       (3, 'Thermite garage breach', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 3, 'Open garage wall with Thermite for a fast plant.'),
+       (4, 'Doc anchor hold', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 4, 'Hold site with Doc and keep teammates alive.'),
+       (5, 'Azami barricade setup', 'https://www.youtube.com/watch?v=9bZkp7q19f0', 5, 'Use Azami Kiba barriers to delay attackers on Border.'),
+       (6, 'Lesion deep roam', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 7, 'Place Gu mines and waste attacker time on Coastline.');
+
+INSERT OR IGNORE INTO pending_strat_submission_categories(submission_id, category_id)
+VALUES (1, 1),
+       (2, 4),
+       (3, 3),
+       (4, 8),
+       (5, 5),
+       (6, 6);
+
+INSERT OR IGNORE INTO pending_strat_submission_operators(submission_id, operator_id)
+VALUES (1, 2),
+       (2, 3),
+       (3, 4),
+       (4, 5),
+       (5, 7),
+       (6, 6);

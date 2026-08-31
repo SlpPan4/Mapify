@@ -4,13 +4,15 @@ using MapifyBackend.database_files;
 var builder = WebApplication.CreateBuilder(args);
 
 // Initialize db
-DatabaseInitializer.EnsureDatabaseCreated();
+string connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=database.db";
+DatabaseInitializer.EnsureDatabaseCreated(connectionString);
 
 // Register services
-builder.Services.AddSingleton<DatabaseService>(); // One for all time
+builder.Services.AddSingleton(_ => new DatabaseService(connectionString)); // One for all time
 builder.Services.AddScoped<StratService>();     // Gets created for each request
 builder.Services.AddScoped<CategoryService>(); // same
 builder.Services.AddScoped<OperatorService>();
+builder.Services.AddScoped<MapService>();
 builder.Services.AddScoped<SubmissionService>();
 
 // add Cors and controllers support

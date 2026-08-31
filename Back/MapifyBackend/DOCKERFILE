@@ -1,0 +1,39 @@
+# build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+WORKDIR /src
+
+COPY MapifyBackend/MapifyBackend.csproj MapifyBackend/
+COPY MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj MapifyBackend.IntegrationTests/
+RUN dotnet restore MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj
+
+COPY MapifyBackend/ MapifyBackend/
+COPY MapifyBackend.IntegrationTests/ MapifyBackend.IntegrationTests/
+
+# test — сборка образа падает, если тесты не прошли
+FROM build AS test
+RUN dotnet test MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj -c Release --no-restore
+
+# test-runner — ручной запуск тестов через docker compose (профиль "test")
+FROM build AS test-runner
+ENTRYPOINT ["dotnet", "test", "MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj", "-c", "Release", "--no-restore"]
+
+# publish (наследуется от test, чтобы тесты гарантированно прошли до публикации)
+FROM test AS publish
+RUN dotnet publish MapifyBackend/MapifyBackend.csproj -c Release -o /app/publish --no-restore
+
+# runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS runtime
+WORKDIR /app
+
+COPY --from=publish /app/publish .
+
+# Install curl for healthchecks and ensure the non-root user can write the SQLite database
+USER root
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /app/data && chown -R app:app /app/data
+USER app
+
+EXPOSE 5000
+ENV ASPNETCORE_URLS=http://+:5000
+
+ENTRYPOINT ["dotnet", "MapifyBackend.dll"]

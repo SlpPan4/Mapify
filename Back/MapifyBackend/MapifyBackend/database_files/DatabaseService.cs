@@ -15,8 +15,8 @@ public class DatabaseService
     /// <summary>
     /// Initializes a new instance of the <see cref="DatabaseService"/> class.
     /// </summary>
-    /// <param name="connectionString">The SQLite connection string. Defaults to "Data Source=database.db".</param>
-    public DatabaseService(string connectionString = "Data Source=database.db")
+    /// <param name="connectionString">The SQLite connection string.</param>
+    public DatabaseService(string connectionString)
     {
         _connectionString = connectionString;
     }
@@ -204,6 +204,59 @@ public class DatabaseService
     }
 
     /// <summary>
+    /// Retrieves all strategies enriched with map, side, categories, and operators.
+    /// </summary>
+    /// <returns>A list of <see cref="StratSummary"/> objects.</returns>
+    public async Task<List<StratSummary>> GetStratsSummary()
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+
+        List<Strat> strats = (await db.QueryAsync<Strat>(
+            "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description FROM strats ORDER BY id")).ToList();
+
+        List<Map> maps = (await db.QueryAsync<Map>("SELECT id, name FROM maps")).ToList();
+        List<Category> allCategories = (await db.QueryAsync<Category>("SELECT id, name, side FROM categories")).ToList();
+        List<Operator> allOperators = (await db.QueryAsync<Operator>("SELECT id, name, side FROM operators")).ToList();
+
+        Dictionary<int, List<Category>> stratCategories = (await db.QueryAsync<(int stratId, int categoryId)>(
+            "SELECT strat_id, category_id FROM strat_categories"))
+            .GroupBy(x => x.stratId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => allCategories.First(c => c.Id == x.categoryId)).ToList());
+
+        Dictionary<int, List<Operator>> stratOperators = (await db.QueryAsync<(int stratId, int operatorId)>(
+            "SELECT strat_id, operator_id FROM strat_operators"))
+            .GroupBy(x => x.stratId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => allOperators.First(o => o.Id == x.operatorId)).ToList());
+
+        Dictionary<int, Map> mapById = maps.ToDictionary(m => m.Id);
+
+        return strats.Select(s =>
+        {
+            stratCategories.TryGetValue(s.Id, out List<Category>? cats);
+            stratOperators.TryGetValue(s.Id, out List<Operator>? ops);
+            string side = cats?.FirstOrDefault()?.Side.ToString()
+                ?? ops?.FirstOrDefault()?.Side.ToString()
+                ?? "Attack";
+
+            return new StratSummary
+            {
+                Id = s.Id,
+                Name = s.Name,
+                VideoUrl = s.VideoUrl,
+                Description = s.Description,
+                Map = mapById.GetValueOrDefault(s.MapId) ?? new Map(s.MapId, $"Map {s.MapId}"),
+                Side = side,
+                Categories = cats ?? [],
+                Operators = ops ?? []
+            };
+        }).ToList();
+    }
+
+    /// <summary>
     /// Deletes a strategy from the database by its ID.
     /// </summary>
     /// <param name="id">The ID of the strategy to delete.</param>
@@ -239,6 +292,17 @@ public class DatabaseService
         });
 
         return rows > 0;
+    }
+
+    /// <summary>
+    /// Retrieves all maps from the database.
+    /// </summary>
+    /// <returns>A list of all <see cref="Map"/> objects.</returns>
+    public async Task<List<Map>> GetAllMaps()
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "SELECT id, name FROM maps ORDER BY name";
+        return (await db.QueryAsync<Map>(sql)).ToList();
     }
 
     /// <summary>
@@ -345,6 +409,20 @@ public class DatabaseService
         string sql = "INSERT INTO strat_categories (strat_id, category_id) " +
                      "VALUES (@stratId, @categoryId)";
         await db.ExecuteAsync(sql, new { stratId = stratId, categoryId = categoryId });
+    }
+
+    /// <summary>
+    /// Removes a category assignment from a strategy.
+    /// </summary>
+    /// <param name="stratId">The ID of the strategy.</param>
+    /// <param name="categoryId">The ID of the category.</param>
+    /// <returns>True if a relation was deleted; otherwise, false.</returns>
+    public async Task<bool> RemoveCategoryFromStrat(int stratId, int categoryId)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "DELETE FROM strat_categories WHERE strat_id = @stratId AND category_id = @categoryId";
+        int rows = await db.ExecuteAsync(sql, new { stratId, categoryId });
+        return rows > 0;
     }
 
     /// <summary>

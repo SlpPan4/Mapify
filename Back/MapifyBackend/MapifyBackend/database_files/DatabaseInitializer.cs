@@ -5,14 +5,6 @@ namespace MapifyBackend.database_files;
 
 public class DatabaseInitializer
 {
-    private const string DbFileName = "database.db";
-    private const string ConnectionString = $"Data Source={DbFileName}";
-
-    public static void EnsureDatabaseCreated()
-    {
-        EnsureDatabaseCreated(ConnectionString);
-    }
-
     public static void EnsureDatabaseCreated(string connectionString)
     {
         try
