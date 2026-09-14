@@ -522,3 +522,6 @@ http-client.private.env.json
 .idea/**/copilot.data.migration.*.xml
 /Back/MapifyBackend/MapifyBackend/obj/
 /Back/MapifyBackend/.idea/
+
+HANDOFF_bots.md
+PLAN_admin_api_security.md

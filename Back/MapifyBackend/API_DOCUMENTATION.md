@@ -24,7 +24,16 @@ Base URL during local development depends on the ASP.NET launch profile, usually
 
 - `side` must be `"Attack"` or `"Defense"`.
 - Create endpoints return `201 Created` with a `Location` header and the created resource ID in `data`.
-- Admin submission endpoints are route-separated but not protected by backend authentication yet. They must not be exposed publicly without hosting/auth restrictions.
+
+## Authentication
+
+Admin routes and all mutating requests are protected by an API key, sent in the `X-Api-Key` header:
+
+- **Protected:** everything under `/api/submissions/admin/...` and all POST/PUT/PATCH/DELETE requests to `/api/strats`, `/api/categories`, `/api/operators`.
+- **Public:** all GET requests, `POST /api/submissions/strats` and `POST /api/submissions/categories` (user submissions), and CORS preflight (OPTIONS).
+- Missing or wrong key → `401 Unauthorized` with the standard error envelope.
+- The key comes from the `AdminApi:Key` configuration value. In Development it defaults to the public dev key `mapify-dev-admin-key` (see `appsettings.Development.json`). Outside Development the app refuses to start unless a unique key is provided via the `AdminApi__Key` environment variable.
+
 - Public frontend submission endpoints should use `/api/submissions/...`, not the direct `/api/strats` or `/api/categories` create endpoints.
 - When submitting a strategy, all selected `categoryIds` must belong to the same `side`, all selected `operatorIds` must belong to the same `side`, and the two sides must match if both lists are provided.
 
@@ -988,7 +997,7 @@ Response `400 Bad Request`:
 
 Base route: `/api/submissions/admin`
 
-These endpoints are intended for a future admin panel. They are not protected by backend auth yet.
+These endpoints require the `X-Api-Key` header (see [Authentication](#authentication)).
 
 ### Get Pending Strat Submissions
 

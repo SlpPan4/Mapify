@@ -1,12 +1,15 @@
 using MapifyBackend.database_files;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MapifyBackend.IntegrationTests;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public const string TestAdminKey = "test-admin-key";
+
     private readonly string _dbFilePath;
 
     public CustomWebApplicationFactory()
@@ -16,6 +19,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AdminApi:Key"] = TestAdminKey
+            });
+        });
+
         builder.ConfigureServices(services =>
         {
             // Remove default DatabaseService registration

@@ -25,19 +25,20 @@ Mapify Admin Panel — одностраничное веб-приложение 
 - **Уведомления:** собственный composable `useToast` (`src/composables/useToast.js`).
 - **Глобальное состояние:** в проекте **нет Pinia/Vuex**; состояние держится в компонентах через `ref`/`computed`.
 
-В корне репозитория (`C:/prog/Mapify/Front/Admin-panel/package.json`) есть отдельный `package.json` с зависимостями `@element-plus/icons-vue`, `element-plus`, `pinia`, `vue-router`. Он **не используется** для сборки приложения. Рабочее приложение находится в подкаталоге `admin-panel/`.
+Рабочее приложение находится в подкаталоге `admin-panel/`; в корне `Front/Admin-panel/` остались только `AGENTS.md`, `DOCKERFILE` и `plan.md` (старый манифест с Element Plus/Pinia удалён).
 
 ## Структура репозитория
 
 ```text
 C:/prog/Mapify/Front/Admin-panel
-├── package.json              # устаревший/неиспользуемый манифест (Element Plus, Pinia)
-├── package-lock.json         # lock-файл для корневого package.json
+├── AGENTS.md                 # этот файл
+├── DOCKERFILE                # dev-контейнер с Vite (npm run dev -- --host)
 ├── plan.md                   # план/статус работы над проектом
 └── admin-panel/              # рабочее Vue 3 приложение
     ├── package.json          # манифест приложения
     ├── vite.config.js        # конфиг Vite
     ├── index.html            # точка входа
+    ├── .env.example          # образец VITE_API_KEY (реальный .env в .gitignore)
     ├── README.md             # стандартный README от шаблона Vue 3 + Vite
     ├── SESSION_STATE.md      # заметки по состоянию сессии (ручные команды, известные ограничения)
     ├── FIGMA_PROMPT.md       # промпт для генерации дизайна в Figma
@@ -73,10 +74,7 @@ C:/prog/Mapify/Front/Admin-panel
         │   ├── CategoryFormModal.vue
         │   ├── SubmissionDetailSlideOver.vue
         │   ├── VideoPlayer.vue
-        │   ├── PlaceholderPage.vue
-        │   ├── SubmissionDetail.vue
-        │   ├── SubmissionList.vue
-        │   └── HelloWorld.vue
+        │   └── PlaceholderPage.vue
         ├── composables/
         │   └── useToast.js
         └── assets/           # изображения и иконки
@@ -140,12 +138,14 @@ npm run dev
 Файл: `admin-panel/src/api/client.js`.
 
 - Базовый URL: `import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/'`.
+- На **каждый** запрос добавляется заголовок `X-Api-Key` со значением `import.meta.env.VITE_API_KEY || 'mapify-dev-admin-key'` (образец — в `.env.example`; реальный `.env` в .gitignore). Vite подхватывает `VITE_*` только при старте dev-сервера/сборке — после смены ключа нужен перезапуск.
 - Экспортируются функции `get`, `post`, `put`, `patch`, `del`.
 - Каждая функция:
   - собирает полный URL с trailing slash у базы;
   - добавляет заголовки `Accept: application/json` и, для mutating-запросов, `Content-Type: application/json`;
   - парсит JSON;
-  - при `!response.ok` бросает `Error` с текстом из `data.error || data.message || HTTP ${status}`;
+  - при `401` бросает `Error` с подсказкой проверить `VITE_API_KEY`;
+  - при прочих `!response.ok` бросает `Error` с текстом из `data.error || data.message || HTTP ${status}`;
   - возвращает `data.data ?? data`.
 
 API-модули (`strats.js`, `categories.js`, `operators.js`, `maps.js`, `submissions.js`) — тонкие обёртки вокруг `client.js`, сгруппированные по предметной области. Добавляй новые вызовы именно туда, а не прямо в компоненты.
@@ -201,18 +201,16 @@ API-модули (`strats.js`, `categories.js`, `operators.js`, `maps.js`, `subm
 
 ## Безопасность
 
-- Приложение не реализует аутентификацию/авторизацию на клиенте. Любой, у кого есть доступ к dev-серверу, может выполнять запросы к бэкенду.
+- Приложение не реализует аутентификацию пользователей на клиенте. Единственная защита — API-ключ: `client.js` централизованно добавляет заголовок `X-Api-Key` (значение из `VITE_API_KEY`, fallback — публичный dev-ключ `mapify-dev-admin-key`). Ключ встраивается в JS-бандл, поэтому это защита от случайных изменений, а не от целенаправленного доступа.
 - Базовый URL бэкенда вынесен в `VITE_API_BASE_URL`; не хардкоди продакшен-URL в коде.
 - `VideoPlayer` встраивает iframe с внешних доменов (YouTube, TikTok, Instagram). При жёстком CSP или production-развёртывании учитывай необходимость разрешить эти источники.
-- Никаких секретов (ключи API, пароли) в репозитории нет; не добавляй `.env` с секретами в коммит.
-- `client.js` не добавляет токены авторизации в заголовки. Если бэкенд начнёт требовать авторизацию, дорабатывай `client.js` централизованно.
+- Никаких секретов (ключи API, пароли) в репозитории нет; не добавляй `.env` с секретами в коммит (он уже в `.gitignore`, образец — `.env.example`).
 
 ## Известные ограничения
 
 - Бэкенд не поддерживает редактирование категорий — кнопка Edit в `CategoriesView` показывает ошибку через toast.
 - У категорий в бэкенде нет полей `Description` и `CreatedAt`, поэтому в таблице отображаются только `ID`, `Name`, `Side`, `Actions`.
 - Страницы `/operators` и `/maps` — placeholder'ы (`PlaceholderPage`).
-- `HelloWorld.vue`, `SubmissionDetail.vue`, `SubmissionList.vue` и `AdminView.vue` в текущей реализации не используются роутером (последний пустой), но остаются в кодовой базе.
 
 ## Полезные ссылки
 
