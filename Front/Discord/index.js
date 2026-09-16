@@ -17,91 +17,502 @@ if (!tokends || !userid) {
 // import request from 'request';
 
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-import {dirname} from 'path';
-import path from 'path';
 
+import {
+    fileURLToPath,
+    pathToFileURL
+} from 'url';
 
 // Dz
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export default client;
-// Dzend
+
+/*
+ * ========================================
+ * AUTH
+ * ========================================
+ */
+
+const tokends = AUTH.tokends;
+const userid = AUTH.userid;
 
 
+if (!tokends) {
+    throw new Error(
+        '❌ tokends is missing in authds.json'
+    );
+}
 
-// Filesystem (fs)
-
-client.commands = new Collection();
-
-// commands
-
-const foldersPathCmds = path.join(__dirname, 'cmds');
-const commandFoldersCmds = fs.readdirSync(foldersPathCmds);
-
-(async () => {
-  for (const folder of commandFoldersCmds) {
-    const commandsPath = path.join(foldersPathCmds, folder);
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-    for (const file of commandFiles) {
-      const filePath = path.join(commandsPath, file);
-
-      const commandModule = await import(`file://${filePath}`);
-      const command = commandModule.default ?? commandModule;
-
-      if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
-      } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-      }
-    }
-  }
-})();
-
-// Events
-
-const eventsPath = path.join(__dirname, 'Events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-(async () => {
-  for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-
-    const eventModule = await import(`file://${filePath}`);
-    const event = eventModule.default ?? eventModule;
-
-    if (event.once) {
-      client.once(event.name, (...args) => event.execute(...args));
-    } else {
-      client.on(event.name, (...args) => event.execute(...args));
-    }
-  }
-})();
-// Fsend
-
-
-// Eventsend
-
-client.login(tokends);
-
-import { REST, Routes } from 'discord.js';
-
-import cmdss from './lists/commands.json' with {"type": "json"}
-const commands = cmdss;
-
-const rest = new REST({ version: '10' }).setToken(tokends);
-
-
-try {
-  console.log('Started refreshing application (/) commands.');
-
-  await rest.put(Routes.applicationCommands(userid), { body: commands });
-
-  console.log('Successfully reloaded application (/) commands.');
-} catch (error) {
-  console.error(error);
+if (!userid) {
+    throw new Error(
+        '❌ userid is missing in authds.json'
+    );
 }
 
 
+/*
+ * ========================================
+ * CLIENT
+ * ========================================
+ */
+
+const client = new Client({
+
+    intents: [
+        GatewayIntentBits.Guilds
+    ]
+
+});
+
+
+/*
+ * ========================================
+ * PATH
+ * ========================================
+ */
+
+const __dirname = dirname(
+    fileURLToPath(import.meta.url)
+);
+
+
+/*
+ * ========================================
+ * COMMAND COLLECTION
+ * ========================================
+ */
+
+client.commands = new Collection();
+
+
+/*
+ * ========================================
+ * START BOT
+ * ========================================
+ */
+
+async function start() {
+
+    /*
+     * ====================================
+     * LOAD COMMANDS
+     * ====================================
+     */
+
+    const commands = [];
+
+    const foldersPathCmds = join(
+        __dirname,
+        'cmds'
+    );
+
+
+    const commandFoldersCmds =
+        fs.readdirSync(
+            foldersPathCmds
+        );
+
+
+    for (
+        const folder
+        of commandFoldersCmds
+    ) {
+
+        const commandsPath = join(
+            foldersPathCmds,
+            folder
+        );
+
+
+        /*
+         * Only process folders
+         */
+
+        if (
+            !fs.statSync(
+                commandsPath
+            ).isDirectory()
+        ) {
+
+            continue;
+
+        }
+
+
+        const commandFiles =
+            fs
+                .readdirSync(
+                    commandsPath
+                )
+                .filter(
+                    file =>
+                        file.endsWith('.js')
+                );
+
+
+        for (
+            const file
+            of commandFiles
+        ) {
+
+            const filePath = join(
+                commandsPath,
+                file
+            );
+
+
+            try {
+
+                /*
+                 * Convert filesystem path
+                 * to a proper file:// URL.
+                 */
+
+                const fileUrl =
+                    pathToFileURL(
+                        filePath
+                    ).href;
+
+
+                const commandModule =
+                    await import(
+                        fileUrl
+                    );
+
+
+                const command =
+                    commandModule.default ??
+                    commandModule;
+
+
+                /*
+                 * Check command structure
+                 */
+
+                if (
+                    !command ||
+                    !command.data ||
+                    typeof command.execute !== 'function'
+                ) {
+
+                    console.warn(
+                        `[WARNING] Invalid command: ${filePath}`
+                    );
+
+                    continue;
+
+                }
+
+
+                const commandName =
+                    command.data.name;
+
+
+                /*
+                 * Prevent duplicate commands
+                 */
+
+                if (
+                    client.commands.has(
+                        commandName
+                    )
+                ) {
+
+                    console.error(
+                        `[ERROR] Duplicate command: /${commandName}`
+                    );
+
+                    console.error(
+                        `[ERROR] File: ${filePath}`
+                    );
+
+                    continue;
+
+                }
+
+
+                /*
+                 * Save command
+                 */
+
+                client.commands.set(
+                    commandName,
+                    command
+                );
+
+
+                /*
+                 * Prepare command for Discord API
+                 */
+
+                commands.push(
+                    command.data.toJSON()
+                );
+
+
+                console.log(
+                    `[COMMAND] Loaded /${commandName}`
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    `[ERROR] Failed to load command: ${filePath}`
+                );
+
+                console.error(error);
+
+            }
+
+        }
+
+    }
+
+
+    console.log(
+        `[COMMANDS] Loaded ${commands.length} commands.`
+    );
+
+
+    /*
+     * ====================================
+     * REGISTER SLASH COMMANDS
+     * ====================================
+     */
+
+    const rest = new REST({
+        version: '10'
+    });
+
+
+    rest.setToken(
+        tokends
+    );
+
+
+    try {
+
+        console.log(
+            'Started refreshing application (/) commands.'
+        );
+
+
+        await rest.put(
+
+            Routes.applicationCommands(
+                userid
+            ),
+
+            {
+                body: commands
+            }
+
+        );
+
+
+        console.log(
+            `Successfully registered ${commands.length} application (/) commands.`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Failed to register application commands:',
+            error
+        );
+
+    }
+
+
+    /*
+     * ====================================
+     * LOAD EVENTS
+     * ====================================
+     */
+
+    const eventsPath = join(
+        __dirname,
+        'Events'
+    );
+
+
+    if (
+        !fs.existsSync(eventsPath)
+    ) {
+
+        console.warn(
+            '[WARNING] Events folder not found.'
+        );
+
+    } else {
+
+        const eventFiles =
+            fs
+                .readdirSync(
+                    eventsPath
+                )
+                .filter(
+                    file =>
+                        file.endsWith('.js')
+                );
+
+
+        for (
+            const file
+            of eventFiles
+        ) {
+
+            const filePath = join(
+                eventsPath,
+                file
+            );
+
+
+            try {
+
+                const fileUrl =
+                    pathToFileURL(
+                        filePath
+                    ).href;
+
+
+                const eventModule =
+                    await import(
+                        fileUrl
+                    );
+
+
+                const event =
+                    eventModule.default ??
+                    eventModule;
+
+
+                /*
+                 * Check event structure
+                 */
+
+                if (
+                    !event ||
+                    !event.name ||
+                    typeof event.execute !== 'function'
+                ) {
+
+                    console.warn(
+                        `[WARNING] Invalid event: ${filePath}`
+                    );
+
+                    console.warn(
+                        '[WARNING] Event must export { name, execute, once? }'
+                    );
+
+                    continue;
+
+                }
+
+
+                /*
+                 * Register event
+                 */
+
+                if (event.once) {
+
+                    client.once(
+
+                        event.name,
+
+                        (...args) =>
+                            event.execute(
+                                ...args
+                            )
+
+                    );
+
+                } else {
+
+                    client.on(
+
+                        event.name,
+
+                        (...args) =>
+                            event.execute(
+                                ...args
+                            )
+
+                    );
+
+                }
+
+
+                console.log(
+                    `[EVENT] Loaded ${event.name}`
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    `[ERROR] Failed to load event: ${filePath}`
+                );
+
+                console.error(error);
+
+            }
+
+        }
+
+    }
+
+
+    /*
+     * ====================================
+     * LOGIN
+     * ====================================
+     */
+
+    try {
+
+        await client.login(
+            tokends
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            '❌ Failed to login to Discord:',
+            error
+        );
+
+    }
+
+}
+
+
+/*
+ * ========================================
+ * RUN
+ * ========================================
+ */
+
+start().catch(
+    error => {
+
+        console.error(
+            '❌ Fatal bot error:',
+            error
+        );
+
+    }
+);
+
+
+/*
+ * ========================================
+ * EXPORT
+ * ========================================
+ */
+
+export default client;
