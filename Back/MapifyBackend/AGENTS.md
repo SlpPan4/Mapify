@@ -22,7 +22,8 @@ The solution contains the main web project (`MapifyBackend/MapifyBackend.csproj`
 
 ```text
 MapifyBackend/
-├── Program.cs                              # Entry point, DI registration, middleware
+├── Program.cs                              # Entry point, DI registration, middleware, admin-key resolution
+├── appsettings.Development.json            # Dev admin key + CORS origins (safe to commit)
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # ASP.NET Core API controllers
 │   ├── CategoriesController.cs
@@ -49,6 +50,9 @@ MapifyBackend/
 │       └── SubmissionService.cs
 └── Utility/
     ├── InputValidator.cs                   # Request validation helpers
+    ├── Api/                                # API-level plumbing
+    │   ├── ApiKeyAuthMiddleware.cs         # X-Api-Key check for admin/mutating routes
+    │   └── ApiResponse.cs                  # Standard response envelope
     ├── DataNormalizingHelpers/StringHelper.cs
     ├── DTOs/                               # API request models
     │   ├── CategoryRequest.cs
@@ -58,9 +62,10 @@ MapifyBackend/
     └── Enums/Side.cs                       # Attack / Defense enum
 
 MapifyBackend.IntegrationTests/
-├── ControllerTestsBase.cs                  # Per-test WebApplicationFactory setup
-├── CustomWebApplicationFactory.cs          # Isolated temp-database factory
+├── ControllerTestsBase.cs                  # Per-test WebApplicationFactory setup; Client sends X-Api-Key by default
+├── CustomWebApplicationFactory.cs          # Isolated temp-database factory; overrides AdminApi:Key with a test key
 ├── HttpResponseMessageExtensions.cs        # Test JSON helpers (includes enum converter)
+├── AdminAuthTests.cs                       # API-key middleware coverage (401 / public routes)
 ├── CategoriesControllerTests.cs
 ├── OperatorsControllerTests.cs
 ├── StratsControllerTests.cs
@@ -69,7 +74,7 @@ MapifyBackend.IntegrationTests/
 
 ## Runtime Architecture
 
-1. `Program.cs` builds the web app, registers services, enables CORS (`AllowAll`), and maps controllers.
+1. `Program.cs` builds the web app, registers services, applies the `AppCors` policy (origins from `Cors:AllowedOrigins`), registers `ApiKeyAuthMiddleware`, and maps controllers.
 2. On startup, `DatabaseInitializer.EnsureDatabaseCreated()` runs `mainschema.sql` against `database.db` in the application base directory, creating tables and seeding maps, operators, categories, and a few sample strats.
 3. `DatabaseService` is registered as a singleton and opens a new `SqliteConnection` per operation, enabling `PRAGMA FOREIGN_KEYS = ON` each time.
 4. Service classes are registered as scoped and contain the application logic between controllers and `DatabaseService`.
@@ -150,8 +155,8 @@ See `API_DOCUMENTATION.md` for full request/response details.
 
 ## Important Implementation Notes
 
-- **No authentication/authorization** is implemented yet. Admin submission endpoints are explicitly marked as unsafe for public exposure in `API_DOCUMENTATION.md` and `SubmissionsController.cs` comments.
-- **CORS is wide open:** `AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`.
+- **API-key authentication** is implemented in `Utility/Api/ApiKeyAuthMiddleware.cs`: admin submission routes and all mutating requests to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header. The key comes from `AdminApi:Key` (env var `AdminApi__Key`); in Development it falls back to the public dev key `mapify-dev-admin-key` from `appsettings.Development.json`, and outside Development the app fails fast if the key is missing or equals the dev key. The key is resolved after `builder.Build()` so `ConfigureAppConfiguration` overrides in tests apply.
+- **CORS** uses the named policy `AppCors`: origins come from `Cors:AllowedOrigins`; an empty list means allow-all in Development and deny-by-default in Production.
 - **Database is file-based SQLite** (`database.db`) created in the app output folder. It is re-initialized every startup by running `mainschema.sql` (the script uses `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`, so existing data is preserved).
 - **EF Core packages are referenced but not wired up.** If you add EF migrations or a `DbContext`, you will be introducing a new pattern; do not assume one already exists.
 - **`mainschema.sql` is the source of truth** for schema and seed data. If you change the schema, update this file and consider whether existing seed data needs adjustment.
@@ -159,9 +164,9 @@ See `API_DOCUMENTATION.md` for full request/response details.
 ## Security Considerations
 
 - The SQLite package transitively pulls in `SQLitePCLRaw.lib.e_sqlite3` 2.1.11, which currently triggers NuGet advisory `GHSA-2m69-gcr7-jv3q` (high severity). Address this when feasible, likely by updating SQLite-related packages.
-- Do not expose the admin submission routes publicly without adding authentication/authorization.
+- Admin and mutating routes are protected by the `X-Api-Key` middleware; keep it ahead of `MapControllers` and never expose the production key in the repository.
 - User input is validated in `InputValidator`, but SQL is written manually with Dapper parameters. Continue using parameterized queries; never concatenate user input into SQL strings.
-- CORS policy allows all origins — tighten this before production deployment.
+- CORS allows only the origins listed in `Cors:AllowedOrigins`; add deployment origins there (or via `Cors__AllowedOrigins__0`, `Cors__AllowedOrigins__1`, ... env vars) instead of reverting to allow-all.
 - The SQLite database file (`database.db`) sits in the application directory and is created with default permissions. For production, use a persistent volume and proper file permissions.
 
 ## Common Tasks

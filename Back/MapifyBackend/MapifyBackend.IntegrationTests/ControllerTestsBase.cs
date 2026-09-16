@@ -13,6 +13,7 @@ public abstract class ControllerTestsBase : IDisposable
     {
         Factory = new CustomWebApplicationFactory();
         Client = Factory.CreateClient();
+        Client.DefaultRequestHeaders.Add(ApiKeyAuthMiddleware.HeaderName, CustomWebApplicationFactory.TestAdminKey);
     }
 
     protected async Task<T?> ReadResponseAsync<T>(HttpResponseMessage response) where T : class?

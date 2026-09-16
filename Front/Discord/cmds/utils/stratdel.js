@@ -56,6 +56,8 @@ try {
 }
 
 
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+
 export default {
 
     data: new SlashCommandBuilder()
@@ -209,6 +211,8 @@ export default {
                 buttons
             ]
 
+        const res = await fetch(`${API_BASE}/api/strats/${id}`, {
+            method: 'DELETE'
         });
 
 

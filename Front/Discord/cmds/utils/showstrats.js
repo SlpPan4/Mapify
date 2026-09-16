@@ -6,6 +6,8 @@ import {
     ButtonStyle
 } from 'discord.js';
 
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+
 export default {
     data: new SlashCommandBuilder()
         .setName('strats-list')
@@ -17,6 +19,8 @@ export default {
                 'http://localhost:5000/api/strats/'
             );
 
+        const req = await fetch(`${API_BASE}/api/strats/`);
+        const strats = await req.json();
             if (!response.ok) {
                 return await interaction.reply({
                     content: '❌ FAILED to get strategies from server.',
@@ -47,6 +51,9 @@ export default {
                         return 'Unknown';
                     }
 
+        for (const strat of strats) {
+            const mapReq = await fetch(`${API_BASE}/api/strats/maps/${strat.mapId}`);
+            const map = await mapReq.json();
                     const mapResponseData =
                         await mapResponse.json();
 
