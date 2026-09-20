@@ -1,0 +1,6 @@
+node_modules
+.env
+authds.json
+.git
+.gitignore
+*.md
