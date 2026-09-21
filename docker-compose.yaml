@@ -51,6 +51,25 @@ services:
       backend:
         condition: service_healthy
 
+  telegram-bot:
+    build:
+      context: ./Front/Telegram
+      dockerfile: DOCKERFILE
+    # Токен и настройки бота — в Front/Telegram/.env (создай из Front/Telegram/.env.example).
+    # Без TELEGRAM_BOT_TOKEN в этом файле бот не запустится.
+    env_file:
+      - path: ./Front/Telegram/.env
+        required: false
+    environment:
+      # Внутри compose-сети бот ходит на бэкенд по имени сервиса.
+      # Это значение переопределяет API_BASE_URL из Front/Telegram/.env
+      - API_BASE_URL=http://backend:5000/api/
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mapify-network
+
 networks:
   mapify-network:
 

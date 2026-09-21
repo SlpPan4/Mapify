@@ -20,10 +20,21 @@ Then, from the repo root:
 docker compose up --build
 ```
 
-Two services come up:
+Three services come up:
 
 - **backend** — API at http://localhost:5000
 - **frontend** — admin panel at http://localhost:5173
+- **telegram-bot** — Telegram bot (starts only if `Front/Telegram/.env` contains a valid token, see below)
+
+### Telegram bot
+
+The bot needs its own `.env`: copy `Front/Telegram/.env.example` to `Front/Telegram/.env` and put your token from @BotFather there:
+
+```
+TELEGRAM_BOT_TOKEN=your-bot-token-here
+```
+
+Inside compose the bot talks to the backend at `http://backend:5000/api/` automatically. Without `Front/Telegram/.env` the container exits immediately — the rest of the stack is unaffected. Running the bot locally without Docker works too: the same `.env` is picked up by `src/config.py`.
 
 The admin panel code is mounted into the container, so frontend edits are picked up on the fly (hot reload). The backend database lives in the `backend-data` docker volume and survives rebuilds.
 
@@ -97,8 +108,8 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 Back/MapifyBackend/       # ASP.NET Core API (+ integration tests)
 Front/Admin-panel/        # admin panel (working app is in the admin-panel/ subfolder)
 Front/Discord/            # Discord bot (not part of docker-compose, configured separately)
-Front/Telegram/           # Telegram bot (not part of docker-compose)
-docker-compose.yaml       # backend + frontend (+ test profile)
+Front/Telegram/           # Telegram bot (docker-compose service telegram-bot, needs Front/Telegram/.env)
+docker-compose.yaml       # backend + frontend + telegram-bot (+ test profile)
 ```
 
 Details on each part — in the `AGENTS.md` files of the corresponding folders and in `Back/MapifyBackend/API_DOCUMENTATION.md`.
@@ -127,10 +138,21 @@ ADMIN_API_KEY=мой-секретный-ключ
 docker compose up --build
 ```
 
-Поднимутся два сервиса:
+Поднимутся три сервиса:
 
 - **backend** — API на http://localhost:5000
 - **frontend** — админ-панель на http://localhost:5173
+- **telegram-bot** — Telegram-бот (запустится, только если в `Front/Telegram/.env` задан токен, см. ниже)
+
+### Telegram-бот
+
+Боту нужен свой `.env`: скопируй `Front/Telegram/.env.example` в `Front/Telegram/.env` и впиши туда токен от @BotFather:
+
+```
+TELEGRAM_BOT_TOKEN=токен-твоего-бота
+```
+
+Внутри compose бот автоматически ходит на бэкенд по адресу `http://backend:5000/api/`. Без `Front/Telegram/.env` контейнер сразу завершится — на остальные сервисы это не влияет. Локальный запуск без Docker тоже работает: тот же `.env` подхватывается в `src/config.py`.
 
 Код админ-панели примонтирован в контейнер, поэтому правки фронта подхватываются на лету (hot reload). База бэкенда лежит в docker-volume `backend-data` и переживает пересборку.
 
@@ -204,8 +226,8 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 Back/MapifyBackend/       # ASP.NET Core API (+ интеграционные тесты)
 Front/Admin-panel/        # админ-панель (рабочее приложение — в подпапке admin-panel/)
 Front/Discord/            # Discord-бот (в docker-compose не входит, настраивается отдельно)
-Front/Telegram/           # Telegram-бот (в docker-compose не входит)
-docker-compose.yaml       # backend + frontend (+ профиль test)
+Front/Telegram/           # Telegram-бот (сервис telegram-bot в docker-compose, нужен Front/Telegram/.env)
+docker-compose.yaml       # backend + frontend + telegram-bot (+ профиль test)
 ```
 
 Подробности по каждой части — в `AGENTS.md` соответствующих папок и в `Back/MapifyBackend/API_DOCUMENTATION.md`.
