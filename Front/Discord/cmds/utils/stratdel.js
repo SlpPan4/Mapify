@@ -3,60 +3,11 @@ import {
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    PermissionFlagsBits
 } from 'discord.js';
 
-
-/*
- * Get current strategies from backend
- * when the bot starts.
- */
-
-let maxStratId = 0;
-
-try {
-
-    const res = await fetch(
-        'http://localhost:5000/api/strats/'
-    );
-
-    const data = await res.json();
-
-    if (res.ok && Array.isArray(data.data)) {
-
-        const strategies = data.data;
-
-        if (strategies.length > 0) {
-
-            maxStratId = Math.max(
-                ...strategies.map(strat => strat.id)
-            );
-
-        }
-
-        console.log(
-            `[STRATS] Found ${strategies.length} strategies. Max ID: ${maxStratId}`
-        );
-
-    } else {
-
-        console.error(
-            '[STRATS] Failed to get strategies.'
-        );
-
-    }
-
-} catch (error) {
-
-    console.error(
-        '[STRATS] Failed to connect to backend:',
-        error
-    );
-
-}
-
-
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+import { deleteStrat } from '../../api/api.js';
 
 export default {
 
@@ -66,19 +17,16 @@ export default {
 
         .setDescription('Delete strategy')
 
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+
         .addIntegerOption(option =>
             option
                 .setName('id')
                 .setDescription(
-                    `Strategy ID (1-${maxStratId})`
+                    'Strategy ID (see /strats-list)'
                 )
                 .setRequired(true)
                 .setMinValue(1)
-                .setMaxValue(
-                    maxStratId > 0
-                        ? maxStratId
-                        : 1
-                )
         ),
 
 
@@ -87,47 +35,6 @@ export default {
         const id =
             interaction.options.getInteger('id');
 
-
-        /*
-         * Check if there are strategies
-         */
-
-        if (maxStratId === 0) {
-
-            return await interaction.reply({
-
-                content:
-                    '❌ There are no strategies available.',
-
-                ephemeral: true
-
-            });
-
-        }
-
-
-        /*
-         * Additional validation
-         */
-
-        if (id > maxStratId) {
-
-            return await interaction.reply({
-
-                content:
-                    `❌ Invalid strategy ID.\n\n` +
-                    `The maximum strategy ID is **${maxStratId}**.`,
-
-                ephemeral: true
-
-            });
-
-        }
-
-
-        /*
-         * Confirmation Embed
-         */
 
         const embed = new EmbedBuilder()
 
@@ -140,26 +47,16 @@ export default {
             )
 
             .addFields({
-
                 name: '🆔 Strategy ID',
-
                 value: `\`${id}\``,
-
                 inline: false
-
             })
 
             .setFooter({
-
                 text:
                     'This action cannot be undone.'
-
             });
 
-
-        /*
-         * Confirmation buttons
-         */
 
         const buttons =
             new ActionRowBuilder()
@@ -167,88 +64,38 @@ export default {
                 .addComponents(
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'strat_delete_confirm'
-                        )
-
+                        .setCustomId('strat_delete_confirm')
                         .setLabel('Confirm')
-
                         .setEmoji('✅')
-
-                        .setStyle(
-                            ButtonStyle.Danger
-                        ),
+                        .setStyle(ButtonStyle.Danger),
 
                     new ButtonBuilder()
-
-                        .setCustomId(
-                            'strat_delete_cancel'
-                        )
-
+                        .setCustomId('strat_delete_cancel')
                         .setLabel('Cancel')
-
                         .setEmoji('❌')
-
-                        .setStyle(
-                            ButtonStyle.Secondary
-                        )
+                        .setStyle(ButtonStyle.Secondary)
 
                 );
 
 
-        /*
-         * Send confirmation message
-         */
-
         await interaction.reply({
-
-            embeds: [
-                embed
-            ],
-
-            components: [
-                buttons
-            ]
-
-        const res = await fetch(`${API_BASE}/api/strats/${id}`, {
-            method: 'DELETE'
+            embeds: [embed],
+            components: [buttons]
         });
-
-
-        /*
-         * Get sent message
-         */
 
         const message =
             await interaction.fetchReply();
 
 
-        /*
-         * Button collector
-         */
-
         const collector =
             message.createMessageComponentCollector({
-
                 time: 60 * 1000
-
             });
 
-
-        /*
-         * Button pressed
-         */
 
         collector.on(
             'collect',
             async buttonInteraction => {
-
-
-                /*
-                 * Only command author
-                 * can use buttons.
-                 */
 
                 if (
                     buttonInteraction.user.id !==
@@ -256,12 +103,9 @@ export default {
                 ) {
 
                     return await buttonInteraction.reply({
-
                         content:
                             '❌ You cannot control this confirmation.',
-
                         ephemeral: true
-
                     });
 
                 }
@@ -278,44 +122,23 @@ export default {
 
                     const cancelledEmbed =
                         new EmbedBuilder()
-
                             .setColor(0x808080)
-
-                            .setTitle(
-                                '❌ Deletion Cancelled'
-                            )
-
+                            .setTitle('❌ Deletion Cancelled')
                             .setDescription(
                                 'The strategy was not deleted.'
                             )
-
                             .addFields({
-
-                                name:
-                                    '🆔 Strategy ID',
-
-                                value:
-                                    `\`${id}\``,
-
-                                inline:
-                                    false
-
+                                name: '🆔 Strategy ID',
+                                value: `\`${id}\``,
+                                inline: false
                             });
 
-
                     await buttonInteraction.update({
-
-                        embeds: [
-                            cancelledEmbed
-                        ],
-
+                        embeds: [cancelledEmbed],
                         components: []
-
                     });
 
-
                     collector.stop();
-
                     return;
 
                 }
@@ -330,139 +153,29 @@ export default {
                     'strat_delete_confirm'
                 ) {
 
+                    await buttonInteraction.deferUpdate();
+
                     try {
 
-                        /*
-                         * DELETE request
-                         */
-
-                        const res = await fetch(
-
-                            `http://localhost:5000/api/strats/${id}`,
-
-                            {
-
-                                method: 'DELETE'
-
-                            }
-
-                        );
-
-
-                        /*
-                         * Backend response
-                         */
-
-                        const data =
-                            await res.json();
-
-
-                        console.log(
-                            'DELETE /api/strats response:',
-                            data
-                        );
-
-
-                        /*
-                         * Backend error
-                         */
-
-                        if (
-                            !res.ok ||
-                            data.error
-                        ) {
-
-                            const errorEmbed =
-                                new EmbedBuilder()
-
-                                    .setColor(0xFF0000)
-
-                                    .setTitle(
-                                        '❌ Failed to Delete Strategy'
-                                    )
-
-                                    .setDescription(
-                                        data.error ||
-                                        'Unknown backend error.'
-                                    )
-
-                                    .addFields({
-
-                                        name:
-                                            '🆔 Strategy ID',
-
-                                        value:
-                                            `\`${id}\``,
-
-                                        inline:
-                                            false
-
-                                    });
-
-
-                            await buttonInteraction.update({
-
-                                embeds: [
-                                    errorEmbed
-                                ],
-
-                                components: []
-
-                            });
-
-
-                            collector.stop();
-
-                            return;
-
-                        }
-
-
-                        /*
-                         * Successful deletion
-                         */
+                        await deleteStrat(id);
 
                         const successEmbed =
                             new EmbedBuilder()
-
                                 .setColor(0x00AE86)
-
-                                .setTitle(
-                                    '✅ Strategy Deleted'
-                                )
-
+                                .setTitle('✅ Strategy Deleted')
                                 .setDescription(
-                                    data.message ||
                                     'Strategy successfully deleted.'
                                 )
-
                                 .addFields({
-
-                                    name:
-                                        '🆔 Deleted Strategy ID',
-
-                                    value:
-                                        `\`${id}\``,
-
-                                    inline:
-                                        false
-
+                                    name: '🆔 Deleted Strategy ID',
+                                    value: `\`${id}\``,
+                                    inline: false
                                 });
 
-
-                        await buttonInteraction.update({
-
-                            embeds: [
-                                successEmbed
-                            ],
-
+                        await buttonInteraction.editReply({
+                            embeds: [successEmbed],
                             components: []
-
                         });
-
-
-                        collector.stop();
-
 
                     } catch (error) {
 
@@ -471,48 +184,28 @@ export default {
                             error
                         );
 
-
                         const errorEmbed =
                             new EmbedBuilder()
-
                                 .setColor(0xFF0000)
-
-                                .setTitle(
-                                    '❌ Error'
-                                )
-
+                                .setTitle('❌ Failed to Delete Strategy')
                                 .setDescription(
-                                    'Failed to connect to the backend.'
+                                    error.message ||
+                                    'Unknown backend error.'
                                 )
-
                                 .addFields({
-
-                                    name:
-                                        '🆔 Strategy ID',
-
-                                    value:
-                                        `\`${id}\``,
-
-                                    inline:
-                                        false
-
+                                    name: '🆔 Strategy ID',
+                                    value: `\`${id}\``,
+                                    inline: false
                                 });
 
-
-                        await buttonInteraction.update({
-
-                            embeds: [
-                                errorEmbed
-                            ],
-
+                        await buttonInteraction.editReply({
+                            embeds: [errorEmbed],
                             components: []
-
                         });
 
-
-                        collector.stop();
-
                     }
+
+                    collector.stop();
 
                 }
 
@@ -526,7 +219,11 @@ export default {
 
         collector.on(
             'end',
-            async () => {
+            async (collected, reason) => {
+
+                if (reason === 'user') {
+                    return;
+                }
 
                 try {
 
@@ -536,46 +233,23 @@ export default {
                             .addComponents(
 
                                 new ButtonBuilder()
-
-                                    .setCustomId(
-                                        'strat_delete_confirm_disabled'
-                                    )
-
+                                    .setCustomId('strat_delete_confirm_disabled')
                                     .setLabel('Confirm')
-
                                     .setEmoji('✅')
-
-                                    .setStyle(
-                                        ButtonStyle.Danger
-                                    )
-
+                                    .setStyle(ButtonStyle.Danger)
                                     .setDisabled(true),
 
                                 new ButtonBuilder()
-
-                                    .setCustomId(
-                                        'strat_delete_cancel_disabled'
-                                    )
-
+                                    .setCustomId('strat_delete_cancel_disabled')
                                     .setLabel('Cancel')
-
                                     .setEmoji('❌')
-
-                                    .setStyle(
-                                        ButtonStyle.Secondary
-                                    )
-
+                                    .setStyle(ButtonStyle.Secondary)
                                     .setDisabled(true)
 
                             );
 
-
                     await interaction.editReply({
-
-                        components: [
-                            disabledButtons
-                        ]
-
+                        components: [disabledButtons]
                     });
 
                 } catch (error) {

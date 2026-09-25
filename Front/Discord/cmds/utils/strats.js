@@ -1,53 +1,70 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+import { getStrats, getMap } from '../../api/api.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('strats')
-        .setDescription('test')
+        .setDescription('Show a strategy by ID')
         .addIntegerOption(option =>
             option
                 .setName('id')
-                .setDescription('Choose strat ID')
+                .setDescription('Strategy ID (see /strats-list)')
                 .setRequired(true)
                 .setMinValue(1)
-                .setMaxValue(8)
         ),
 
     async execute(interaction) {
+        await interaction.deferReply();
 
-        const id = interaction.options.getInteger('id');
+        try {
+            const id = interaction.options.getInteger('id');
 
-        const strats = await fetch(`${API_BASE}/api/strats/`);
-        const data = await strats.json();
+            const strats = await getStrats();
+            const strat = (Array.isArray(strats) ? strats : []).find(item => item.id === id);
 
-        const strat = data.find(item => item.id === id);
+            if (!strat) {
+                return await interaction.editReply({
+                    content: 'Strategy not found on our server! Try checking the ID of the strategy using /strats-list!'
+                });
+            }
 
-        if (!strat) {
-            return interaction.reply({
-                content: 'Strategy not found on our server! Try checking the ID of the strategy using /strats-list!',
-                ephemeral: true
+            let mapName = 'Unknown';
+
+            try {
+                const map = await getMap(strat.mapId);
+                mapName = map?.name || 'Unknown';
+            } catch (error) {
+                console.error(`Failed to get map ${strat.mapId}:`, error);
+            }
+
+            let videoUrl = strat.videoUrl || '';
+
+            if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
+                videoUrl = 'https://' + videoUrl;
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(0x0099ff)
+                .setTitle(strat.name)
+                .setDescription(strat.description || 'No description set.')
+                .addFields(
+                    { name: 'Strategy ID', value: String(strat.id), inline: true },
+                    { name: 'Map', value: mapName, inline: true }
+                )
+                .setTimestamp();
+
+            if (videoUrl) {
+                embed.setURL(videoUrl);
+            }
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            console.error('strats error:', error);
+
+            await interaction.editReply({
+                content: '❌ Failed to load the strategy. Please try again later.'
             });
         }
-
-        const map = await fetch(`${API_BASE}/api/strats/maps/${strat.mapId}`);
-        const maps = await map.json();
-
-        let dickins = strat.description || 'No description set.';
-
-        const exampleEmbed = new EmbedBuilder()
-            .setColor(0x0099ff)
-            .setTitle(strat.name)
-            .setURL('https://' + strat.videoUrl)
-            .setDescription(dickins)
-            .addFields(
-                { name: 'Strategy ID', value: String(strat.id) },
-                { name: 'Map', value: String(maps.name), inline: true }
-            )
-            .setTimestamp()
-            .setFooter({ text: 'made with rainbow sex api' });
-
-        await interaction.reply({ embeds: [exampleEmbed] });
     },
 };

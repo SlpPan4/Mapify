@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, MessageFlags, REST, Routes } from 'discord.js';
 
 // Локально подхватывает .env; в Docker переменные приходят от docker compose
 try {
@@ -14,67 +14,21 @@ if (!tokends || !userid) {
   console.error('DISCORD_TOKEN and DISCORD_CLIENT_ID must be set (via .env or environment).');
   process.exit(1);
 }
-// import request from 'request';
 
 import fs from 'fs';
+
+import {
+    dirname,
+    join
+} from 'path';
 
 import {
     fileURLToPath,
     pathToFileURL
 } from 'url';
 
-// Dz
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-
-/*
- * ========================================
- * AUTH
- * ========================================
- */
-
-const tokends = AUTH.tokends;
-const userid = AUTH.userid;
-
-
-if (!tokends) {
-    throw new Error(
-        '❌ tokends is missing in authds.json'
-    );
-}
-
-if (!userid) {
-    throw new Error(
-        '❌ userid is missing in authds.json'
-    );
-}
-
-
-/*
- * ========================================
- * CLIENT
- * ========================================
- */
-
-const client = new Client({
-
-    intents: [
-        GatewayIntentBits.Guilds
-    ]
-
-});
-
-
-/*
- * ========================================
- * PATH
- * ========================================
- */
-
-const __dirname = dirname(
-    fileURLToPath(import.meta.url)
-);
 
 
 /*

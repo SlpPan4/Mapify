@@ -50,7 +50,11 @@ export default {
 
 
         const channelId =
-            '1446991723384279134';
+            process.env.LOG_CHANNEL_ID;
+
+        if (!channelId) {
+            return;
+        }
 
 
         try {
@@ -75,9 +79,14 @@ export default {
             }
 
 
-            await channel.send(
-                '<@594130786672836611>'
-            );
+            const pingUserId =
+                process.env.LOG_PING_USER_ID;
+
+            if (pingUserId) {
+                await channel.send(
+                    `<@${pingUserId}>`
+                );
+            }
 
 
             await channel.send({

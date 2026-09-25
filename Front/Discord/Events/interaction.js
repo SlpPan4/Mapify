@@ -19,12 +19,12 @@ export default {
 
 			if (interaction.replied || interaction.deferred) {
 				await interaction.followUp({
-					content: 'There was a FUCKING ERROR!!!  while executing this command!',
+					content: '❌ There was an error while executing this command. Please try again later.',
 					flags: MessageFlags.Ephemeral,
 				});
 			} else {
 				await interaction.reply({
-					content: 'There was a FUCKING ERROR !! while executing this command!',
+					content: '❌ There was an error while executing this command. Please try again later.',
 					flags: MessageFlags.Ephemeral,
 				});
 			}

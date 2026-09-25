@@ -6,7 +6,27 @@ import {
     ButtonStyle
 } from 'discord.js';
 
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+import { getStrats, getMap } from '../../api/api.js';
+
+const mapCache = new Map();
+
+async function getCachedMapName(mapId) {
+    if (mapCache.has(mapId)) {
+        return mapCache.get(mapId);
+    }
+
+    let name = 'Unknown';
+
+    try {
+        const map = await getMap(mapId);
+        name = map?.name || 'Unknown';
+    } catch (error) {
+        console.error(`Failed to get map ${mapId}:`, error);
+    }
+
+    mapCache.set(mapId, name);
+    return name;
+}
 
 export default {
     data: new SlashCommandBuilder()
@@ -14,27 +34,14 @@ export default {
         .setDescription('Show all strategies'),
 
     async execute(interaction) {
+        await interaction.deferReply();
+
         try {
-            const response = await fetch(
-                'http://localhost:5000/api/strats/'
-            );
-
-        const req = await fetch(`${API_BASE}/api/strats/`);
-        const strats = await req.json();
-            if (!response.ok) {
-                return await interaction.reply({
-                    content: '❌ FAILED to get strategies from server.',
-                    ephemeral: true
-                });
-            }
-
-            const responseData = await response.json();
-            const strats = responseData.data || [];
+            const strats = (await getStrats()) || [];
 
             if (strats.length === 0) {
-                return await interaction.reply({
-                    content: 'There are no strategies in the database.',
-                    ephemeral: true
+                return await interaction.editReply({
+                    content: 'There are no strategies in the database.'
                 });
             }
 
@@ -42,34 +49,7 @@ export default {
             const totalPages = strats.length;
 
             async function getMapName(mapId) {
-                try {
-                    const mapResponse = await fetch(
-                        `http://localhost:5000/api/strats/maps/${mapId}`
-                    );
-
-                    if (!mapResponse.ok) {
-                        return 'Unknown';
-                    }
-
-        for (const strat of strats) {
-            const mapReq = await fetch(`${API_BASE}/api/strats/maps/${strat.mapId}`);
-            const map = await mapReq.json();
-                    const mapResponseData =
-                        await mapResponse.json();
-
-                    const mapData =
-                        mapResponseData.data || mapResponseData;
-
-                    return mapData.name || 'Unknown';
-
-                } catch (error) {
-                    console.error(
-                        `Failed to get map ${mapId}:`,
-                        error
-                    );
-
-                    return 'Unknown';
-                }
+                return await getCachedMapName(mapId);
             }
 
             async function createEmbed(page) {
@@ -161,7 +141,7 @@ export default {
                         )
                         .setFooter({
                             text:
-                                `Strategy ${page + 1}/${totalPages} • love from 🇮🇱`
+                                `Strategy ${page + 1}/${totalPages}`
                         })
                         .setTimestamp();
 
@@ -206,7 +186,7 @@ export default {
             }
 
             const message =
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [
                         await createEmbed(currentPage)
                     ],
@@ -322,20 +302,11 @@ export default {
                 error
             );
 
-            if (interaction.replied) {
-                return;
-            }
-
-            await interaction.reply({
+            await interaction.editReply({
                 content:
-                    '❌ Something went wrong while loading strategies.',
-                ephemeral: true
+                    '❌ Something went wrong while loading strategies.'
             });
         }
     }
 };
-
-/*
-* 03:31 ночи я заебался сука пидорасы
-*/
 

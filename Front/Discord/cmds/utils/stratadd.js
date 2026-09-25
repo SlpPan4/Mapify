@@ -1,6 +1,32 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+import { addStrat } from '../../api/api.js';
+
+const MAPS = [
+    { name: 'Oregon', id: 1 },
+    { name: 'Consulate', id: 2 },
+    { name: 'Bank', id: 3 },
+    { name: 'Clubhouse', id: 4 },
+    { name: 'Border', id: 5 },
+    { name: 'Fortress', id: 6 },
+    { name: 'Coastline', id: 7 },
+    { name: 'Chalet', id: 8 },
+    { name: 'Kafe', id: 9 },
+    { name: 'Outback', id: 10 },
+    { name: 'Nighthaven Labs', id: 11 },
+    { name: 'Lair', id: 12 },
+    { name: 'Kanal', id: 13 },
+    { name: 'Villa', id: 14 },
+    { name: 'Skyscraper', id: 15 },
+    { name: 'Theme park', id: 16 },
+    { name: 'Emerald Plains', id: 17 },
+    { name: 'Favela', id: 18 },
+    { name: 'Tower', id: 19 },
+    { name: 'Yacht', id: 20 },
+    { name: 'Presidential Plane', id: 21 },
+    { name: 'Stadium Bravo', id: 22 },
+    { name: 'Stadium 2020', id: 23 }
+];
 
 export default {
 
@@ -10,10 +36,7 @@ export default {
 
         .setDescription('Add new strategy')
 
-
-        /*
-         * FUCKING REQUIRED OPTIONS
-        */
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
 
         .addStringOption(option =>
             option
@@ -34,45 +57,13 @@ export default {
                 .setName('map')
                 .setDescription('Map')
                 .setRequired(true)
-
-                /*
-                 * The FUCKING map list.
-                 */
-
                 .addChoices(
-
-                    { name: 'Bank', value: 3 },
-                    { name: 'Border', value: 5 },
-                    { name: 'Chalet', value: 8 },
-                    { name: 'Clubhouse', value: 4 },
-                    { name: 'Coastline', value: 7 },
-                    { name: 'Consulate', value: 2 },
-                    { name: 'Emerald Plains', value: 17 },
-                    { name: 'Favela', value: 18 },
-                    { name: 'Fortress', value: 6 },
-                    { name: 'Kafe', value: 9 },
-                    { name: 'Kanal', value: 13 },
-                    { name: 'Lair', value: 12 },
-                    { name: 'Nighthaven Labs', value: 11 },
-                    { name: 'Oregon', value: 1 },
-                    { name: 'Outback', value: 10 },
-                    { name: 'Presidential Plane', value: 21 },
-                    { name: 'Skyscraper', value: 15 },
-                    { name: 'Stadium 2020', value: 23 },
-                    { name: 'Stadium Bravo', value: 22 },
-                    { name: 'Theme park', value: 16 },
-                    { name: 'Tower', value: 19 },
-                    { name: 'Villa', value: 14 },
-                    { name: 'Yacht', value: 20 }
-
+                    ...MAPS.map(map => ({
+                        name: map.name,
+                        value: map.id
+                    }))
                 )
-
         )
-
-
-        /*
-         * OPTIONAL STUFF
-         */
 
         .addStringOption(option =>
             option
@@ -83,6 +74,8 @@ export default {
 
 
     async execute(interaction) {
+
+        await interaction.deferReply();
 
         try {
 
@@ -98,195 +91,44 @@ export default {
             const mapId =
                 interaction.options.getInteger('map');
 
-
-
-            const mapNames = {
-
-                1: 'Oregon',
-                2: 'Consulate',
-                3: 'Bank',
-                4: 'Clubhouse',
-                5: 'Border',
-                6: 'Fortress',
-                7: 'Coastline',
-                8: 'Chalet',
-                9: 'Kafe',
-                10: 'Outback',
-                11: 'Nighthaven Labs',
-                12: 'Lair',
-                13: 'Kanal',
-                14: 'Villa',
-                15: 'Skyscraper',
-                16: 'Theme park',
-                17: 'Emerald Plains',
-                18: 'Favela',
-                19: 'Tower',
-                20: 'Yacht',
-                21: 'Presidential Plane',
-                22: 'Stadium Bravo',
-                23: 'Stadium 2020'
-
-            };
-
-
-
             const mapName =
-                mapNames[mapId];
-
+                MAPS.find(map => map.id === mapId)?.name;
 
             if (!mapName) {
 
-                return await interaction.reply({
-
-                    content:
-                        '❌ Invalid map selected.',
-
-                    ephemeral: true
-
+                return await interaction.editReply({
+                    content: '❌ Invalid map selected.'
                 });
 
             }
 
-            const res = await fetch(
-
-                'http://localhost:5000/api/strats/',
-
-                {
-
-                    method: 'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json'
-
-                    },
-
-                    body: JSON.stringify({
-
-                        name: name,
-
-                        videoUrl: video,
-
-                        mapId: mapId,
-
-                        mapName: mapName,
-
-                        description: description
-
-                    })
-
-        const res = await fetch(`${API_BASE}/api/strats/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: name,
+            const data = await addStrat({
+                name,
                 videoUrl: video,
-                mapId: mapId
-            })
-        });
-
-            );
-
-
-            /*
-             * Давайте посмотрим что нам вернёт блядский бэкенд от дмитрия
-             * Я заебался писать на английском всё равно ебучий репо для нас жрите мой хуй
-             */
-
-            const data =
-                await res.json();
-
-
-            console.log(
-                'POST /api/strats response:',
-                data
-            );
-
-
-            if (!res.ok) {
-
-                return await interaction.reply({
-
-                    content:
-                        `❌ Failed to add strategy.\n\n` +
-
-                        `HTTP: ${res.status}\n` +
-
-                        `Error: ${
-                            data.error ||
-                            'Unknown error'
-                        }`,
-
-                    ephemeral: true
-
-                });
-
-            }
-
-
-            if (data.error) {
-
-                return await interaction.reply({
-
-                    content:
-                        `❌ Failed to add strategy.\n\n` +
-
-                        `${data.error}`,
-
-                    ephemeral: true
-
-                });
-
-            }
-
-
-
-            const stratId =
-                data.data?.stratId ?? 'unknown';
-
-
-
-            await interaction.reply({
-
-                content:
-                    `✅ Strategy **${name}** successfully added!\n\n` +
-
-                    `🆔 ID: ${stratId}\n` +
-
-                    `🗺️ Map: ${mapName}`
-
+                mapName,
+                description
             });
 
+            const stratId =
+                data?.stratId ?? 'unknown';
+
+            await interaction.editReply({
+                content:
+                    `✅ Strategy **${name}** successfully added!\n\n` +
+                    `🆔 ID: ${stratId}\n` +
+                    `🗺️ Map: ${mapName}`
+            });
 
         } catch (error) {
-
-
 
             console.error(
                 'strat-add error:',
                 error
             );
 
-
-
-
-            if (interaction.replied) {
-
-                return;
-
-            }
-
-
-
-
-            await interaction.reply({
-
+            await interaction.editReply({
                 content:
-                    '❌ Failed to connect to the backend.',
-
-                ephemeral: true
-
+                    `❌ Failed to add strategy.\n\n${error.message}`
             });
 
         }
