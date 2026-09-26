@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using MapifyBackend.database_files;
 using MapifyBackend.Utility.Api;
 
@@ -43,6 +44,28 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Rate limiting for the public submission endpoints (anti-spam).
+// Limits come from config (RateLimiting:Submissions) but are resolved per request
+// from DI, so integration tests can override them via the service collection.
+builder.Services.AddSingleton(_ =>
+    builder.Configuration.GetSection("RateLimiting:Submissions").Get<SubmissionRateLimitOptions>()
+    ?? new SubmissionRateLimitOptions());
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("submissions", httpContext =>
+    {
+        var limits = httpContext.RequestServices.GetRequiredService<SubmissionRateLimitOptions>();
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = limits.PermitLimit,
+            Window = TimeSpan.FromSeconds(limits.WindowSeconds),
+            QueueLimit = 0
+        });
+    });
+});
+
 var app = builder.Build();
 
 // Resolve admin API key after Build() so test/host-level configuration overrides are visible.
@@ -63,6 +86,7 @@ if (!isDevelopment && adminApiKey == "mapify-dev-admin-key")
 
 // Middleware
 app.UseCors("AppCors");
+app.UseRateLimiter();
 app.UseMiddleware<ApiKeyAuthMiddleware>(adminApiKey);
 app.MapControllers(); // Connects URL with controllers
 

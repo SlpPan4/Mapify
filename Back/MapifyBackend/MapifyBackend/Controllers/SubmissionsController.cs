@@ -4,12 +4,14 @@ using MapifyBackend.Utility.Api;
 using MapifyBackend.Utility.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MapifyBackend.Controllers;
 
 /// <summary>
 /// API for public strategy/category submissions and admin review.
-/// Admin endpoints are route-separated but not protected by backend authentication yet.
+/// Public POST endpoints are rate limited (policy "submissions");
+/// admin endpoints require the X-Api-Key header (see ApiKeyAuthMiddleware).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -30,9 +32,11 @@ public class SubmissionsController : ControllerBase
     /// <param name="request">The strategy submission request.</param>
     /// <returns>The ID of the created pending submission with a Location header.</returns>
     [HttpPost("strats")]
+    [EnableRateLimiting("submissions")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SubmitStrat([FromBody] StratSubmissionRequest request)
     {
         try
@@ -61,8 +65,10 @@ public class SubmissionsController : ControllerBase
     /// <param name="request">The category submission request.</param>
     /// <returns>The ID of the created pending submission with a Location header.</returns>
     [HttpPost("categories")]
+    [EnableRateLimiting("submissions")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SubmitCategory([FromBody] CategorySubmissionRequest request)
     {
         try
@@ -87,7 +93,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Returns all pending strategy submissions.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <returns>A list of pending strategy submissions.</returns>
     [HttpGet("admin/strats")]
@@ -99,7 +105,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Returns a pending strategy submission by ID.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>The pending strategy submission if found.</returns>
@@ -117,7 +123,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Approves a pending strategy submission and moves it to the public strategies table.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>The ID of the newly approved strategy.</returns>
@@ -143,7 +149,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Rejects a pending strategy submission.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>A success message if the submission was rejected.</returns>
@@ -160,7 +166,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Returns all pending category submissions.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <returns>A list of pending category submissions.</returns>
     [HttpGet("admin/categories")]
@@ -172,7 +178,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Returns a pending category submission by ID.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>The pending category submission if found.</returns>
@@ -190,7 +196,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Approves a pending category submission and moves it to the public categories table.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>The ID of the newly approved category.</returns>
@@ -216,7 +222,7 @@ public class SubmissionsController : ControllerBase
 
     /// <summary>
     /// Rejects a pending category submission.
-    /// Admin-only endpoint. Restrict this route at the hosting/auth layer before exposing it publicly.
+    /// Admin-only endpoint, requires the X-Api-Key header.
     /// </summary>
     /// <param name="id">The pending submission ID.</param>
     /// <returns>A success message if the submission was rejected.</returns>

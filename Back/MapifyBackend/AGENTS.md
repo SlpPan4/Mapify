@@ -52,7 +52,8 @@ MapifyBackend/
     ├── InputValidator.cs                   # Request validation helpers
     ├── Api/                                # API-level plumbing
     │   ├── ApiKeyAuthMiddleware.cs         # X-Api-Key check for admin/mutating routes
-    │   └── ApiResponse.cs                  # Standard response envelope
+    │   ├── ApiResponse.cs                  # Standard response envelope
+    │   └── SubmissionRateLimitOptions.cs   # Rate-limit settings for public submission POSTs
     ├── DataNormalizingHelpers/StringHelper.cs
     ├── DTOs/                               # API request models
     │   ├── CategoryRequest.cs
@@ -69,13 +70,14 @@ MapifyBackend.IntegrationTests/
 ├── CategoriesControllerTests.cs
 ├── OperatorsControllerTests.cs
 ├── StratsControllerTests.cs
-└── SubmissionsControllerTests.cs
+├── SubmissionsControllerTests.cs
+└── SubmissionsRateLimitTests.cs           # Rate-limit policy coverage (429)
 ```
 
 ## Runtime Architecture
 
-1. `Program.cs` builds the web app, registers services, applies the `AppCors` policy (origins from `Cors:AllowedOrigins`), registers `ApiKeyAuthMiddleware`, and maps controllers.
-2. On startup, `DatabaseInitializer.EnsureDatabaseCreated()` runs `mainschema.sql` against `database.db` in the application base directory, creating tables and seeding maps, operators, categories, and a few sample strats.
+1. `Program.cs` builds the web app, registers services, applies the `AppCors` policy (origins from `Cors:AllowedOrigins`), enables rate limiting (`UseRateLimiter`), registers `ApiKeyAuthMiddleware`, and maps controllers.
+2. On startup, `DatabaseInitializer.EnsureDatabaseCreated()` runs `mainschema.sql` against `database.db` in the application base directory, creating tables and seeding maps, operators, categories, and a few sample strats. The script runs in a single transaction with `busy_timeout` so parallel initializers (e.g. integration tests) cannot interleave; on failure the app fails fast and the database file is left untouched.
 3. `DatabaseService` is registered as a singleton and opens a new `SqliteConnection` per operation, enabling `PRAGMA FOREIGN_KEYS = ON` each time.
 4. Service classes are registered as scoped and contain the application logic between controllers and `DatabaseService`.
 5. Controllers accept JSON requests, call validators/services, and return JSON responses.
@@ -156,6 +158,7 @@ See `API_DOCUMENTATION.md` for full request/response details.
 ## Important Implementation Notes
 
 - **API-key authentication** is implemented in `Utility/Api/ApiKeyAuthMiddleware.cs`: admin submission routes and all mutating requests to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header. The key comes from `AdminApi:Key` (env var `AdminApi__Key`); in Development it falls back to the public dev key `mapify-dev-admin-key` from `appsettings.Development.json`, and outside Development the app fails fast if the key is missing or equals the dev key. The key is resolved after `builder.Build()` so `ConfigureAppConfiguration` overrides in tests apply.
+- **Rate limiting** protects the public submission POSTs (`POST /api/submissions/strats`, `POST /api/submissions/categories`) via the named policy `submissions` (`Microsoft.AspNetCore.RateLimiting`, fixed window per client IP). Limits come from `RateLimiting:Submissions` (`PermitLimit`, `WindowSeconds`; defaults 10 per 60 s) and are resolved from DI per request so tests can override them. Over-limit requests get `429`.
 - **CORS** uses the named policy `AppCors`: origins come from `Cors:AllowedOrigins`; an empty list means allow-all in Development and deny-by-default in Production.
 - **Database is file-based SQLite** (`database.db`) created in the app output folder. It is re-initialized every startup by running `mainschema.sql` (the script uses `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`, so existing data is preserved).
 - **EF Core packages are referenced but not wired up.** If you add EF migrations or a `DbContext`, you will be introducing a new pattern; do not assume one already exists.

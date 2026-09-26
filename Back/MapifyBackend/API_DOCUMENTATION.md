@@ -884,6 +884,8 @@ Base route: `/api/submissions`
 
 These endpoints store user-provided content in pending tables. Approved content is moved into the normal `strats`, `categories`, `strat_categories`, and `strat_operators` tables.
 
+The two public POST endpoints are rate limited per client IP (fixed window, shared across both endpoints): over-limit requests are rejected with `429 Too Many Requests` (empty body). Limits are configured via `RateLimiting:Submissions` (`PermitLimit`, `WindowSeconds`; default 10 requests per 60 seconds).
+
 ### Submit Strat For Approval
 
 `POST /api/submissions/strats`
