@@ -53,11 +53,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             if (File.Exists(_dbFilePath))
                 File.Delete(_dbFilePath);
-
-            // Clean up default database.db created by Program.cs in test output directory
-            string defaultDbPath = Path.Combine(AppContext.BaseDirectory, "database.db");
-            if (File.Exists(defaultDbPath))
-                File.Delete(defaultDbPath);
+            // Общий database.db из Program.cs здесь не удаляем: на Linux unlink
+            // открытого файла ломает параллельные фабрики (SQLITE_READONLY_DBMOVED)
         }
         catch
         {
