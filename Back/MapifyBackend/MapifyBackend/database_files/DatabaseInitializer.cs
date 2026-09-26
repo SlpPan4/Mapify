@@ -23,13 +23,10 @@ public class DatabaseInitializer
         }
         catch (Exception e)
         {
-            Console.WriteLine($"DB CREATION FAILED: {e.Message}");
-            if (connectionString.StartsWith("Data Source="))
-            {
-                var fileName = connectionString["Data Source=".Length..];
-                if (fileName != ":memory:" && File.Exists(fileName))
-                    File.Delete(fileName);
-            }
+            // Не пытаемся "починить" БД удалением файла: при битой схеме падаем
+            // сразу и с полным стеком, а данные остаются на месте для разбирательства.
+            Console.WriteLine($"DB CREATION FAILED: {e}");
+            throw;
         }
     }
 }
