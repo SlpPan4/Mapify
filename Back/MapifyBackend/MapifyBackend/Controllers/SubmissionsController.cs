@@ -9,7 +9,7 @@ namespace MapifyBackend.Controllers;
 
 /// <summary>
 /// API for public strategy/category submissions and admin review.
-/// Admin endpoints are route-separated but not protected by backend authentication yet.
+/// Admin endpoints are protected by the X-Api-Key middleware.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]

@@ -70,6 +70,27 @@ services:
     networks:
       - mapify-network
 
+  discord-bot:
+    build:
+      context: ./Front/Discord
+      dockerfile: DOCKERFILE
+    # Токены и настройки бота — в Front/Discord/.env (создай из Front/Discord/.env.example).
+    # Без DISCORD_TOKEN и DISCORD_CLIENT_ID в этом файле бот не запустится.
+    # Ключ админки боту не нужен: он работает только с публичными эндпоинтами
+    # (чтение стратегий + подача на модерацию через /api/submissions/strats).
+    env_file:
+      - path: ./Front/Discord/.env
+        required: false
+    environment:
+      # Внутри compose-сети бот ходит на бэкенд по имени сервиса.
+      # Это значение переопределяет API_BASE_URL из Front/Discord/.env
+      - API_BASE_URL=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mapify-network
+
 networks:
   mapify-network:
 

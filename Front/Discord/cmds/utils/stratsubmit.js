@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 
-import { addStrat } from '../../api/api.js';
+import { submitStrat } from '../../api/api.js';
 
 const MAPS = [
     { name: 'Oregon', id: 1 },
@@ -32,11 +32,9 @@ export default {
 
     data: new SlashCommandBuilder()
 
-        .setName('strat-add')
+        .setName('strat-submit')
 
-        .setDescription('Add new strategy')
-
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+        .setDescription('Submit a strategy for review')
 
         .addStringOption(option =>
             option
@@ -102,33 +100,34 @@ export default {
 
             }
 
-            const data = await addStrat({
+            const data = await submitStrat({
                 name,
                 videoUrl: video,
-                mapName,
-                description
+                description,
+                mapId
             });
 
-            const stratId =
-                data?.stratId ?? 'unknown';
+            const submissionId =
+                data?.submissionId ?? 'unknown';
 
             await interaction.editReply({
                 content:
-                    `✅ Strategy **${name}** successfully added!\n\n` +
-                    `🆔 ID: ${stratId}\n` +
-                    `🗺️ Map: ${mapName}`
+                    `✅ Strategy **${name}** submitted for review!\n\n` +
+                    `🆔 Submission ID: ${submissionId}\n` +
+                    `🗺️ Map: ${mapName}\n\n` +
+                    `It will appear in the bot once approved in the admin panel.`
             });
 
         } catch (error) {
 
             console.error(
-                'strat-add error:',
+                'strat-submit error:',
                 error
             );
 
             await interaction.editReply({
                 content:
-                    `❌ Failed to add strategy.\n\n${error.message}`
+                    `❌ Failed to submit the strategy.\n\n${error.message}`
             });
 
         }

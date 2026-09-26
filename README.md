@@ -2,7 +2,7 @@
 
 *English version below — [Русская версия](#mapify--мануал-по-запуску).*
 
-Stack: ASP.NET Core (.NET 10) backend + Vue 3 (Vite) admin panel. Data lives in a SQLite file.
+Stack: ASP.NET Core (.NET 10) backend + Vue 3 (Vite) admin panel + Telegram and Discord bots. Data lives in a SQLite file.
 
 ## Quick start: Docker (one command)
 
@@ -20,11 +20,12 @@ Then, from the repo root:
 docker compose up --build
 ```
 
-Three services come up:
+Four services come up:
 
 - **backend** — API at http://localhost:5000
 - **frontend** — admin panel at http://localhost:5173
 - **telegram-bot** — Telegram bot (starts only if `Front/Telegram/.env` contains a valid token, see below)
+- **discord-bot** — Discord bot (starts only if `Front/Discord/.env` contains a valid token, see below)
 
 ### Telegram bot
 
@@ -35,6 +36,19 @@ TELEGRAM_BOT_TOKEN=your-bot-token-here
 ```
 
 Inside compose the bot talks to the backend at `http://backend:5000/api/` automatically. Without `Front/Telegram/.env` the container exits immediately — the rest of the stack is unaffected. Running the bot locally without Docker works too: the same `.env` is picked up by `src/config.py`.
+
+### Discord bot
+
+The Discord bot needs its own `.env`: copy `Front/Discord/.env.example` to `Front/Discord/.env` and fill in the credentials from the Discord Developer Portal:
+
+```
+DISCORD_TOKEN=your-bot-token-here
+DISCORD_CLIENT_ID=your-application-id-here
+```
+
+Optionally set `TRN_API_KEY` (Tracker Network API key) to enable the `/r6stats` player-stats command. Inside compose the bot talks to the backend at `http://backend:5000` automatically. Without `Front/Discord/.env` the container exits immediately — the rest of the stack is unaffected. Local run without Docker: `cd Front/Discord && npm install && npm start`.
+
+The Discord bot has **no admin key by design**: it only reads strategies and submits new ones for review via the public `POST /api/submissions/strats` endpoint (`/strat-submit` command). Submitted strategies appear in the bot only after approval in the admin panel. Slash commands are re-registered globally on every bot start.
 
 The admin panel code is mounted into the container, so frontend edits are picked up on the fly (hot reload). The backend database lives in the `backend-data` docker volume and survives rebuilds.
 
@@ -107,9 +121,9 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 ```text
 Back/MapifyBackend/       # ASP.NET Core API (+ integration tests)
 Front/Admin-panel/        # admin panel (working app is in the admin-panel/ subfolder)
-Front/Discord/            # Discord bot (not part of docker-compose, configured separately)
+Front/Discord/            # Discord bot (docker-compose service discord-bot, needs Front/Discord/.env)
 Front/Telegram/           # Telegram bot (docker-compose service telegram-bot, needs Front/Telegram/.env)
-docker-compose.yaml       # backend + frontend + telegram-bot (+ test profile)
+docker-compose.yaml       # backend + frontend + telegram-bot + discord-bot (+ test profile)
 ```
 
 Details on each part — in the `AGENTS.md` files of the corresponding folders and in `Back/MapifyBackend/API_DOCUMENTATION.md`.
@@ -120,7 +134,7 @@ Details on each part — in the `AGENTS.md` files of the corresponding folders a
 
 *[English version](#mapify--setup-guide).*
 
-Стек: бэкенд на ASP.NET Core (.NET 10) + админ-панель на Vue 3 (Vite). Данные — в SQLite-файле.
+Стек: бэкенд на ASP.NET Core (.NET 10) + админ-панель на Vue 3 (Vite) + боты для Telegram и Discord. Данные — в SQLite-файле.
 
 ## Быстрый старт: Docker (одна команда)
 
@@ -138,11 +152,12 @@ ADMIN_API_KEY=мой-секретный-ключ
 docker compose up --build
 ```
 
-Поднимутся три сервиса:
+Поднимутся четыре сервиса:
 
 - **backend** — API на http://localhost:5000
 - **frontend** — админ-панель на http://localhost:5173
 - **telegram-bot** — Telegram-бот (запустится, только если в `Front/Telegram/.env` задан токен, см. ниже)
+- **discord-bot** — Discord-бот (запустится, только если в `Front/Discord/.env` задан токен, см. ниже)
 
 ### Telegram-бот
 
@@ -153,6 +168,19 @@ TELEGRAM_BOT_TOKEN=токен-твоего-бота
 ```
 
 Внутри compose бот автоматически ходит на бэкенд по адресу `http://backend:5000/api/`. Без `Front/Telegram/.env` контейнер сразу завершится — на остальные сервисы это не влияет. Локальный запуск без Docker тоже работает: тот же `.env` подхватывается в `src/config.py`.
+
+### Discord-бот
+
+Discord-боту нужен свой `.env`: скопируй `Front/Discord/.env.example` в `Front/Discord/.env` и впиши данные из Discord Developer Portal:
+
+```
+DISCORD_TOKEN=токен-твоего-бота
+DISCORD_CLIENT_ID=application-id-бота
+```
+
+Опционально задай `TRN_API_KEY` (ключ Tracker Network API) — он включает команду `/r6stats` со статистикой игроков. Внутри compose бот автоматически ходит на бэкенд по адресу `http://backend:5000`. Без `Front/Discord/.env` контейнер сразу завершится — на остальные сервисы это не влияет. Локальный запуск без Docker: `cd Front/Discord && npm install && npm start`.
+
+У Discord-бота **нет ключа админки — это by design**: он только читает стратегии и отправляет новые на модерацию через публичный `POST /api/submissions/strats` (команда `/strat-submit`). Отправленная стратегия появится в боте после одобрения в админ-панели. Slash-команды перерегистрируются глобально при каждом запуске бота.
 
 Код админ-панели примонтирован в контейнер, поэтому правки фронта подхватываются на лету (hot reload). База бэкенда лежит в docker-volume `backend-data` и переживает пересборку.
 
@@ -225,9 +253,9 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 ```text
 Back/MapifyBackend/       # ASP.NET Core API (+ интеграционные тесты)
 Front/Admin-panel/        # админ-панель (рабочее приложение — в подпапке admin-panel/)
-Front/Discord/            # Discord-бот (в docker-compose не входит, настраивается отдельно)
+Front/Discord/            # Discord-бот (сервис discord-bot в docker-compose, нужен Front/Discord/.env)
 Front/Telegram/           # Telegram-бот (сервис telegram-bot в docker-compose, нужен Front/Telegram/.env)
-docker-compose.yaml       # backend + frontend + telegram-bot (+ профиль test)
+docker-compose.yaml       # backend + frontend + telegram-bot + discord-bot (+ профиль test)
 ```
 
 Подробности по каждой части — в `AGENTS.md` соответствующих папок и в `Back/MapifyBackend/API_DOCUMENTATION.md`.

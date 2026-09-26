@@ -39,7 +39,7 @@ C:/prog/Mapify/Front/Admin-panel
     ├── vite.config.js        # конфиг Vite
     ├── index.html            # точка входа
     ├── .env.example          # образец VITE_API_KEY (реальный .env в .gitignore)
-    ├── README.md             # стандартный README от шаблона Vue 3 + Vite
+    ├── README.md             # описание приложения, запуск, настройка, поток модерации
     ├── SESSION_STATE.md      # заметки по состоянию сессии (ручные команды, известные ограничения)
     ├── FIGMA_PROMPT.md       # промпт для генерации дизайна в Figma
     ├── dist/                 # результат production-сборки

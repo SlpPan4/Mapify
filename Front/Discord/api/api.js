@@ -1,19 +1,11 @@
 const API_BASE = (process.env.API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const REQUEST_TIMEOUT_MS = 10_000;
 
-async function request(endpoint, { method = 'GET', body, admin = false } = {}) {
+async function request(endpoint, { method = 'GET', body } = {}) {
     const headers = {};
 
     if (body !== undefined) {
         headers['Content-Type'] = 'application/json';
-    }
-
-    if (admin) {
-        if (!ADMIN_API_KEY) {
-            throw new Error('ADMIN_API_KEY is not configured on the bot.');
-        }
-        headers['X-Api-Key'] = ADMIN_API_KEY;
     }
 
     let response;
@@ -71,17 +63,16 @@ export function getMaps() {
     return request('/maps');
 }
 
-export function addStrat({ name, videoUrl, mapName, description }) {
-    return request('/strats', {
+export function submitStrat({ name, videoUrl, description, mapId }) {
+    return request('/submissions/strats', {
         method: 'POST',
-        admin: true,
-        body: { name, videoUrl, mapName, description }
-    });
-}
-
-export function deleteStrat(id) {
-    return request(`/strats/${id}`, {
-        method: 'DELETE',
-        admin: true
+        body: {
+            name,
+            videoUrl,
+            description,
+            mapId,
+            categoryIds: [],
+            operatorIds: []
+        }
     });
 }

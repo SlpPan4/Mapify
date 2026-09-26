@@ -19,6 +19,7 @@ MapifyBackend/
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # API controllers
 │   ├── CategoriesController.cs
+│   ├── MapsController.cs
 │   ├── OperatorsController.cs
 │   ├── StratsController.cs
 │   └── SubmissionsController.cs
@@ -131,8 +132,9 @@ All responses use a single envelope:
 
 ## Important Notes
 
-- **No authentication/authorization** is implemented yet. Admin submission endpoints are route-separated but publicly reachable — protect them at the hosting/auth layer before exposing the API.
+- **API-key authentication:** admin submission routes (`/api/submissions/admin/...`) and all mutating requests (POST/PUT/PATCH/DELETE) to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header (`ApiKeyAuthMiddleware`). The key comes from `AdminApi:Key` (env var `AdminApi__Key`); in Development it falls back to the dev key `mapify-dev-admin-key`, and outside Development the app fails fast if the key is missing or equals the dev key. Public reads and `POST /api/submissions/...` need no key.
+- **Clients:** the admin panel sends the key via `VITE_API_KEY`. The Discord and Telegram bots deliberately do **not** have the key — they only read data and submit new content through the public submissions endpoints.
 - **Strategy submissions validate side consistency:** when submitting a strategy, all selected `categoryIds` must share the same `side`, all selected `operatorIds` must share the same `side`, and the two sides must match if both lists are provided.
-- **CORS is wide open** (`AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`). Tighten before production.
+- **CORS** uses the named `AppCors` policy with origins from `Cors:AllowedOrigins` (env vars `Cors__AllowedOrigins__0`, `__1`, ...). An empty list means allow-all in Development and deny-by-default in Production.
 - **Database** is file-based SQLite (`database.db`) initialized from `mainschema.sql` on every startup. Existing data is preserved thanks to `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`.
 - **NuGet advisory:** `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 triggers high-severity advisory [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q). Update SQLite-related packages when feasible.
