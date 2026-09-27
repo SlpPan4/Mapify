@@ -231,3 +231,10 @@ docker-compose.yaml       # backend + frontend + telegram-bot (+ профиль 
 ```
 
 Подробности по каждой части — в `AGENTS.md` соответствующих папок и в `Back/MapifyBackend/API_DOCUMENTATION.md`.
+
+## Authors / Авторы
+
+- **Dmytro Osipov** ([@SlpPan4](https://github.com/SlpPan4)) — backend, admin panel, DevOps / бэкенд, админ-панель, DevOps
+- Telegram & Discord bots / боты — см. [contributors](https://github.com/SlpPan4/Mapify/graphs/contributors)
+
+License / Лицензия: [MIT](LICENSE)
