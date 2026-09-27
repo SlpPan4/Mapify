@@ -15,21 +15,25 @@ ASP.NET Core Web API for the Mapify project. Stores and serves Rainbow Six Siege
 
 ```text
 MapifyBackend/
-├── Program.cs                              # Entry point, DI, middleware, CORS
+├── Program.cs                              # Entry point, DI, middleware, CORS, rate limiting
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # API controllers
 │   ├── CategoriesController.cs
+│   ├── MapsController.cs
 │   ├── OperatorsController.cs
 │   ├── StratsController.cs
 │   └── SubmissionsController.cs
 ├── database_files/
-│   ├── DatabaseInitializer.cs              # Runs schema script on startup
+│   ├── DatabaseInitializer.cs              # Runs schema script on startup (single transaction)
 │   ├── DatabaseService.cs                  # All Dapper/SQLite data access
 │   ├── mainschema.sql                      # Schema + seed data
 │   ├── Entities/                           # Plain domain models
 │   └── Services/                           # Thin service layer
 └── Utility/
-    ├── Api/ApiResponse.cs                  # Generic API response envelope
+    ├── Api/                                # API-level plumbing
+    │   ├── ApiKeyAuthMiddleware.cs         # X-Api-Key check for admin/mutating routes
+    │   ├── ApiResponse.cs                  # Generic API response envelope
+    │   └── SubmissionRateLimitOptions.cs   # Rate-limit settings for public submission POSTs
     ├── InputValidator.cs                   # Request validation
     ├── DataNormalizingHelpers/StringHelper.cs
     ├── DTOs/                               # API request/response models
@@ -39,6 +43,7 @@ MapifyBackend.IntegrationTests/
 ├── ControllerTestsBase.cs
 ├── CustomWebApplicationFactory.cs
 ├── HttpResponseMessageExtensions.cs
+├── SubmissionsRateLimitTests.cs            # Rate-limit policy coverage (429)
 └── *ControllerTests.cs
 ```
 
@@ -131,8 +136,8 @@ All responses use a single envelope:
 
 ## Important Notes
 
-- **No authentication/authorization** is implemented yet. Admin submission endpoints are route-separated but publicly reachable — protect them at the hosting/auth layer before exposing the API.
+- **Authentication:** admin submission endpoints and all mutating requests to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header (see `Utility/Api/ApiKeyAuthMiddleware.cs`). The key comes from `AdminApi:Key` (env var `AdminApi__Key`); outside Development the app refuses to start with a missing or default key.
 - **Strategy submissions validate side consistency:** when submitting a strategy, all selected `categoryIds` must share the same `side`, all selected `operatorIds` must share the same `side`, and the two sides must match if both lists are provided.
-- **CORS is wide open** (`AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()`). Tighten before production.
-- **Database** is file-based SQLite (`database.db`) initialized from `mainschema.sql` on every startup. Existing data is preserved thanks to `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`.
-- **NuGet advisory:** `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 triggers high-severity advisory [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q). Update SQLite-related packages when feasible.
+- **Public submission endpoints are rate limited** per client IP (fixed window, default 10 requests per 60 seconds; configured via `RateLimiting:Submissions`). Over-limit requests get `429 Too Many Requests`.
+- **CORS** uses the named policy `AppCors`: origins come from `Cors:AllowedOrigins` (dev default `http://localhost:5173`); an empty list means allow-all in Development and deny-by-default in Production.
+- **Database** is file-based SQLite (`database.db`) initialized from `mainschema.sql` on every startup in a single transaction. Existing data is preserved thanks to `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`; on initialization failure the app fails fast and the database file is left untouched.

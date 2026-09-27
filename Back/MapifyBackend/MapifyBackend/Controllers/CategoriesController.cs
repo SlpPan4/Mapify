@@ -16,12 +16,10 @@ namespace MapifyBackend.Controllers;
 [Produces("application/json")]
 public class CategoriesController : ControllerBase
 {
-    private readonly DatabaseService _db;
     private readonly CategoryService _categoryService;
 
-    public CategoriesController(DatabaseService db, CategoryService categoryService)
+    public CategoriesController(CategoryService categoryService)
     {
-        _db = db;
         _categoryService = categoryService;
     }
 

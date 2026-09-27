@@ -13,8 +13,8 @@ The solution contains the main web project (`MapifyBackend/MapifyBackend.csproj`
 - **Runtime / Framework:** .NET 10 (`net10.0`), ASP.NET Core Web API
 - **Language:** C# 13 with `ImplicitUsings` and `Nullable` enabled
 - **Database:** SQLite via `Microsoft.Data.Sqlite`
-- **Data access:** Dapper (`Dapper` 2.1.72)
-- **ORM packages present but not actively used in code:** Entity Framework Core 10.0.5 (SQLite and Npgsql providers are referenced; no `DbContext` is wired up in `Program.cs`)
+- **Data access:** Dapper (`Dapper` 2.1.72); no ORM is used or referenced
+- **Rate limiting:** `Microsoft.AspNetCore.RateLimiting` (built into ASP.NET Core)
 - **Serialization:** System.Text.Json with `JsonStringEnumConverter` for enum output
 - **IDE metadata:** JetBrains Rider / IntelliJ IDEA files under `.idea/`
 
@@ -161,12 +161,11 @@ See `API_DOCUMENTATION.md` for full request/response details.
 - **Rate limiting** protects the public submission POSTs (`POST /api/submissions/strats`, `POST /api/submissions/categories`) via the named policy `submissions` (`Microsoft.AspNetCore.RateLimiting`, fixed window per client IP). Limits come from `RateLimiting:Submissions` (`PermitLimit`, `WindowSeconds`; defaults 10 per 60 s) and are resolved from DI per request so tests can override them. Over-limit requests get `429`.
 - **CORS** uses the named policy `AppCors`: origins come from `Cors:AllowedOrigins`; an empty list means allow-all in Development and deny-by-default in Production.
 - **Database is file-based SQLite** (`database.db`) created in the app output folder. It is re-initialized every startup by running `mainschema.sql` (the script uses `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`, so existing data is preserved).
-- **EF Core packages are referenced but not wired up.** If you add EF migrations or a `DbContext`, you will be introducing a new pattern; do not assume one already exists.
 - **`mainschema.sql` is the source of truth** for schema and seed data. If you change the schema, update this file and consider whether existing seed data needs adjustment.
 
 ## Security Considerations
 
-- The SQLite package transitively pulls in `SQLitePCLRaw.lib.e_sqlite3` 2.1.11, which currently triggers NuGet advisory `GHSA-2m69-gcr7-jv3q` (high severity). Address this when feasible, likely by updating SQLite-related packages.
+- `SQLitePCLRaw.lib.e_sqlite3` is pinned to 2.1.13 in the csproj because the transitive 2.1.11 carries the high-severity advisory `GHSA-2m69-gcr7-jv3q`. When `Microsoft.Data.Sqlite` is updated to a version that pulls a fixed native library, the pin can be removed.
 - Admin and mutating routes are protected by the `X-Api-Key` middleware; keep it ahead of `MapControllers` and never expose the production key in the repository.
 - User input is validated in `InputValidator`, but SQL is written manually with Dapper parameters. Continue using parameterized queries; never concatenate user input into SQL strings.
 - CORS allows only the origins listed in `Cors:AllowedOrigins`; add deployment origins there (or via `Cors__AllowedOrigins__0`, `Cors__AllowedOrigins__1`, ... env vars) instead of reverting to allow-all.

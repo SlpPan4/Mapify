@@ -510,6 +510,78 @@ Response `404 Not Found`:
 }
 ```
 
+### Get Strats By Map
+
+`GET /api/strats/bymap/{id}`
+
+Returns all strategies for a map.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Cool Ash Rush",
+      "videoUrl": "youtube.com",
+      "mapId": 7,
+      "description": ""
+    }
+  ],
+  "message": null,
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "No strats found in map 999"
+}
+```
+
+### Get Strats By Operator
+
+`GET /api/strats/byoperator/{id}`
+
+Returns all strategies that use a specific operator.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Cool Ash Rush",
+      "videoUrl": "youtube.com",
+      "mapId": 7,
+      "description": ""
+    }
+  ],
+  "message": null,
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "No strats found by operator 999"
+}
+```
+
 ### Get Map By ID
 
 `GET /api/strats/maps/{id}`
@@ -1231,6 +1303,8 @@ Read endpoints:
 - `GET /api/strats/{id}`
 - `GET /api/strats/summary`
 - `GET /api/strats/category/{id}`
+- `GET /api/strats/bymap/{id}`
+- `GET /api/strats/byoperator/{id}`
 - `GET /api/strats/maps/{id}`
 - `GET /api/strats/maps/byname/{mapName}`
 - `GET /api/maps`
