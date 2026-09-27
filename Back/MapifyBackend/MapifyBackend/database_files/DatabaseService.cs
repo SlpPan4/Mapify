@@ -822,7 +822,7 @@ public class DatabaseService
         {
             // caught upon:
             // - foreign key violation
-            // - duplicate (если UNIQUE есть)
+            // - duplicate (if a UNIQUE constraint exists)
             return false;
         }
     }

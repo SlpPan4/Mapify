@@ -8,7 +8,7 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:5000
       - ASPNETCORE_ENVIRONMENT=Development
-      # Ключ админки. По умолчанию dev-ключ; свой ключ задай в корневом .env (ADMIN_API_KEY=...)
+      # Admin API key. Defaults to the dev key; set your own in the root .env (ADMIN_API_KEY=...)
       - AdminApi__Key=${ADMIN_API_KEY:-mapify-dev-admin-key}
       - Cors__AllowedOrigins__0=http://localhost:5173
       - ConnectionStrings__Default=Data Source=/app/data/database.db
@@ -38,8 +38,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      # Админка шлёт этот ключ в заголовке X-Api-Key; должен совпадать с AdminApi__Key бэкенда.
-      # Vite читает VITE_* при старте dev-сервера, поэтому после смены ключа нужен restart.
+      # The admin panel sends this key in the X-Api-Key header; it must match the backend's AdminApi__Key.
+      # Vite reads VITE_* when the dev server starts, so changing the key requires a restart.
       - VITE_API_KEY=${ADMIN_API_KEY:-mapify-dev-admin-key}
       - VITE_API_BASE_URL=http://localhost:5000
     volumes:
@@ -55,14 +55,14 @@ services:
     build:
       context: ./Front/Telegram
       dockerfile: DOCKERFILE
-    # Токен и настройки бота — в Front/Telegram/.env (создай из Front/Telegram/.env.example).
-    # Без TELEGRAM_BOT_TOKEN в этом файле бот не запустится.
+    # Bot token and settings live in Front/Telegram/.env (create it from Front/Telegram/.env.example).
+    # Without TELEGRAM_BOT_TOKEN in that file the bot will not start.
     env_file:
       - path: ./Front/Telegram/.env
         required: false
     environment:
-      # Внутри compose-сети бот ходит на бэкенд по имени сервиса.
-      # Это значение переопределяет API_BASE_URL из Front/Telegram/.env
+      # Inside the compose network the bot reaches the backend by service name.
+      # This value overrides API_BASE_URL from Front/Telegram/.env
       - API_BASE_URL=http://backend:5000/api/
     depends_on:
       backend:

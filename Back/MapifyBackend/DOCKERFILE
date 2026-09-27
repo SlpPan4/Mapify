@@ -9,15 +9,15 @@ RUN dotnet restore MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests
 COPY MapifyBackend/ MapifyBackend/
 COPY MapifyBackend.IntegrationTests/ MapifyBackend.IntegrationTests/
 
-# test — сборка образа падает, если тесты не прошли
+# test — the image build fails if the tests do not pass
 FROM build AS test
 RUN dotnet test MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj -c Release --no-restore
 
-# test-runner — ручной запуск тестов через docker compose (профиль "test")
+# test-runner — manual test run via docker compose (profile "test")
 FROM build AS test-runner
 ENTRYPOINT ["dotnet", "test", "MapifyBackend.IntegrationTests/MapifyBackend.IntegrationTests.csproj", "-c", "Release", "--no-restore"]
 
-# publish (наследуется от test, чтобы тесты гарантированно прошли до публикации)
+# publish (inherits from test so tests are guaranteed to pass before publishing)
 FROM test AS publish
 RUN dotnet publish MapifyBackend/MapifyBackend.csproj -c Release -o /app/publish --no-restore
 

@@ -12,9 +12,9 @@ public class DatabaseInitializer
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
             connection.Execute("PRAGMA FOREIGN_KEYS = ON;");
-            // Инициализация может запускаться параллельно (интеграционные тесты):
-            // busy_timeout заставляет конкурента подождать, а транзакция не даёт
-            // увидеть полуприменённую схему (иначе гонка = FOREIGN KEY constraint failed)
+            // Initialization can run concurrently (integration tests):
+            // busy_timeout makes a concurrent initializer wait, and the transaction
+            // prevents it from seeing a half-applied schema (a race = FOREIGN KEY constraint failed)
             connection.Execute("PRAGMA busy_timeout = 10000;");
 
             var path = Path.Combine(AppContext.BaseDirectory, "database_files", "mainschema.sql");
@@ -29,8 +29,8 @@ public class DatabaseInitializer
         }
         catch (Exception e)
         {
-            // Не пытаемся "починить" БД удалением файла: при битой схеме падаем
-            // сразу и с полным стеком, а данные остаются на месте для разбирательства.
+            // Do not "fix" the database by deleting the file: on a broken schema we fail
+            // fast with the full stack trace, and the data stays in place for investigation.
             Console.WriteLine($"DB CREATION FAILED [{connectionString}]: {e}");
             throw;
         }

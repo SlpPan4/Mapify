@@ -17,8 +17,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public CustomWebApplicationFactory(int submissionPermitLimit = 1_000_000, int submissionWindowSeconds = 60)
     {
         _dbFilePath = Path.Combine(Path.GetTempPath(), $"mapify_test_{Guid.NewGuid()}.db");
-        // По умолчанию лимит фактически отключён, чтобы существующие тесты не упирались
-        // в него (один IP на все запросы). Тесты лимитера передают свои значения.
+        // The limit is effectively disabled by default so existing tests do not hit it
+        // (all requests share one IP). Rate-limit tests pass their own values.
         _rateLimitOptions = new SubmissionRateLimitOptions
         {
             PermitLimit = submissionPermitLimit,
@@ -65,8 +65,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             if (File.Exists(_dbFilePath))
                 File.Delete(_dbFilePath);
-            // Общий database.db из Program.cs здесь не удаляем: на Linux unlink
-            // открытого файла ломает параллельные фабрики (SQLITE_READONLY_DBMOVED)
+            // Do not delete the shared database.db created by Program.cs here: on Linux
+            // unlinking an open file breaks parallel factories (SQLITE_READONLY_DBMOVED)
         }
         catch
         {
