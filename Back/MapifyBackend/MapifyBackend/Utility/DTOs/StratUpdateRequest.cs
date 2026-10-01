@@ -13,6 +13,7 @@ public class StratUpdateRequest
     public string Name { get; set; } = null!;
     public string VideoUrl { get; set; } = null!;
     public string? Description { get; set; }
+    public int? BombsiteId { get; set; }
 
     public string MapName
     {

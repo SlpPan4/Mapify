@@ -9,6 +9,7 @@ public class StratRequest
     public string Name { get; set; }
     public string VideoUrl { get; set; }
     public string? Description { get; set; }
+    public int? BombsiteId { get; set; }
 
     public string MapName
     {

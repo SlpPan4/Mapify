@@ -1,6 +1,6 @@
 # Mapify Backend API Documentation
 
-Updated: 2026-07-20
+Updated: 2026-10-01
 
 Base URL during local development depends on the ASP.NET launch profile, usually `http://localhost:{port}`. All endpoints below are relative to that base URL and return JSON.
 
@@ -29,7 +29,7 @@ Base URL during local development depends on the ASP.NET launch profile, usually
 
 Admin routes and all mutating requests are protected by an API key, sent in the `X-Api-Key` header:
 
-- **Protected:** everything under `/api/submissions/admin/...` and all POST/PUT/PATCH/DELETE requests to `/api/strats`, `/api/categories`, `/api/operators`.
+- **Protected:** everything under `/api/submissions/admin/...` and `/api/admin/maps/...` (all methods), and all POST/PUT/PATCH/DELETE requests to `/api/strats`, `/api/categories`, `/api/operators`.
 - **Public:** all GET requests, `POST /api/submissions/strats` and `POST /api/submissions/categories` (user submissions), and CORS preflight (OPTIONS).
 - Missing or wrong key → `401 Unauthorized` with the standard error envelope.
 - The key comes from the `AdminApi:Key` configuration value. In Development it defaults to the public dev key `mapify-dev-admin-key` (see `appsettings.Development.json`). Outside Development the app refuses to start unless a unique key is provided via the `AdminApi__Key` environment variable.
@@ -47,13 +47,16 @@ Admin routes and all mutating requests are protected by an API key, sent in the 
   "name": "Cool Ash Rush",
   "videoUrl": "youtube.com",
   "mapId": 7,
-  "description": ""
+  "description": "",
+  "bombsiteId": 31
 }
 ```
 
+`bombsiteId` is `null` when the strat is not tagged with a bombsite.
+
 ### Strat Detail
 
-Returned by `GET /api/strats/{id}`. Includes the related map, categories, and operators.
+Returned by `GET /api/strats/{id}`. Includes the related map, bombsite, categories, and operators.
 
 ```json
 {
@@ -64,6 +67,11 @@ Returned by `GET /api/strats/{id}`. Includes the related map, categories, and op
   "map": {
     "id": 7,
     "name": "Coastline"
+  },
+  "bombsite": {
+    "id": 31,
+    "mapId": 7,
+    "name": "Site A"
   },
   "categories": [
     {
@@ -90,6 +98,34 @@ Returned by `GET /api/strats/{id}`. Includes the related map, categories, and op
   "name": "Oregon"
 }
 ```
+
+`GET /api/maps/{id}` additionally includes the map's bombsites:
+
+```json
+{
+  "id": 1,
+  "name": "Oregon",
+  "bombsites": [
+    {
+      "id": 1,
+      "mapId": 1,
+      "name": "Site A"
+    }
+  ]
+}
+```
+
+### Bombsite
+
+```json
+{
+  "id": 1,
+  "mapId": 1,
+  "name": "Site A"
+}
+```
+
+Every map is seeded with the bombsites `Site A`, `Site B`, `Site C`, `Site D`, and `All`.
 
 ### Category
 
@@ -119,12 +155,15 @@ Returned by `GET /api/strats/{id}`. Includes the related map, categories, and op
   "name": "Oregon attic execute",
   "videoUrl": "https://youtube.com/watch?v=example",
   "mapId": 1,
+  "bombsiteId": 3,
   "description": "Open attic wall and plant behind half wall.",
   "submittedAt": "2026-06-30T12:00:00",
   "categoryIds": [1, 2],
   "operatorIds": [1, 4]
 }
 ```
+
+`bombsiteId` is optional and `null` when the submission is not tagged with a bombsite.
 
 ### Category Submission
 
@@ -165,7 +204,8 @@ Response `200 OK`:
       "name": "Cool Ash Rush",
       "videoUrl": "youtube.com",
       "mapId": 7,
-      "description": ""
+      "description": "",
+      "bombsiteId": 31
     }
   ],
   "message": null,
@@ -177,7 +217,7 @@ Response `200 OK`:
 
 `GET /api/strats/{id}`
 
-Returns the full strategy details including map, categories, and operators.
+Returns the full strategy details including map, bombsite, categories, and operators.
 
 Response `200 OK`:
 
@@ -192,6 +232,11 @@ Response `200 OK`:
     "map": {
       "id": 7,
       "name": "Coastline"
+    },
+    "bombsite": {
+      "id": 31,
+      "mapId": 7,
+      "name": "Site A"
     },
     "categories": [
       {
@@ -228,7 +273,7 @@ Response `404 Not Found`:
 
 `GET /api/strats/summary`
 
-Returns all strategies enriched with their map, derived side, categories, and operators. Useful for list views in the admin panel.
+Returns all strategies enriched with their map, bombsite, derived side, categories, and operators. Useful for list views in the admin panel.
 
 Response `200 OK`:
 
@@ -244,6 +289,11 @@ Response `200 OK`:
       "map": {
         "id": 7,
         "name": "Coastline"
+      },
+      "bombsite": {
+        "id": 31,
+        "mapId": 7,
+        "name": "Site A"
       },
       "side": "Attack",
       "categories": [
@@ -280,11 +330,12 @@ Request:
   "name": "Oregon rush",
   "videoUrl": "https://youtube.com/watch?v=example",
   "mapName": "Oregon",
-  "description": "Push through attic and plant behind half wall."
+  "description": "Push through attic and plant behind half wall.",
+  "bombsiteId": 1
 }
 ```
 
-All fields except `description` are required.
+All fields except `description` and `bombsiteId` are required. `bombsiteId` is optional; when provided, the bombsite must exist and belong to the strat's map.
 
 Response `201 Created`:
 
@@ -334,9 +385,12 @@ Request:
   "name": "Oregon rush",
   "videoUrl": "https://youtube.com/watch?v=example",
   "mapName": "Oregon",
-  "description": "Updated description"
+  "description": "Updated description",
+  "bombsiteId": 1
 }
 ```
+
+`bombsiteId` may be `null` to clear the bombsite; when set, the bombsite must belong to the strat's map.
 
 Response `200 OK`:
 
@@ -491,7 +545,8 @@ Response `200 OK`:
       "name": "Cool Ash Rush",
       "videoUrl": "youtube.com",
       "mapId": 7,
-      "description": ""
+      "description": "",
+      "bombsiteId": 31
     }
   ],
   "message": null,
@@ -527,7 +582,8 @@ Response `200 OK`:
       "name": "Cool Ash Rush",
       "videoUrl": "youtube.com",
       "mapId": 7,
-      "description": ""
+      "description": "",
+      "bombsiteId": 31
     }
   ],
   "message": null,
@@ -563,7 +619,8 @@ Response `200 OK`:
       "name": "Cool Ash Rush",
       "videoUrl": "youtube.com",
       "mapId": 7,
-      "description": ""
+      "description": "",
+      "bombsiteId": 31
     }
   ],
   "message": null,
@@ -666,6 +723,208 @@ Response `200 OK`:
   "error": null
 }
 ```
+
+### Get Map By ID
+
+`GET /api/maps/{id}`
+
+Returns the map including all of its bombsites.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": {
+    "id": 1,
+    "name": "Oregon",
+    "bombsites": [
+      {
+        "id": 1,
+        "mapId": 1,
+        "name": "Site A"
+      },
+      {
+        "id": 2,
+        "mapId": 1,
+        "name": "Site B"
+      }
+    ]
+  },
+  "message": null,
+  "error": null
+}
+```
+
+Response `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "data": null,
+  "message": null,
+  "error": "Map by id 999 not found"
+}
+```
+
+## Admin Maps & Bombsites
+
+Base route: `/api/admin/maps`
+
+All endpoints in this section require the `X-Api-Key` header (see [Authentication](#authentication)). Map and bombsite names are normalized (first letter uppercase, rest lowercase).
+
+### Create Map
+
+`POST /api/admin/maps`
+
+Request:
+
+```json
+{
+  "name": "New Map"
+}
+```
+
+Response `201 Created`:
+
+```json
+{
+  "status": 201,
+  "data": {
+    "mapId": 24
+  },
+  "message": "Map added",
+  "error": null
+}
+```
+
+Response `400 Bad Request` — invalid name, or a map with the same name already exists.
+
+### Rename Map
+
+`PUT /api/admin/maps/{id}`
+
+Request:
+
+```json
+{
+  "name": "Renamed Map"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Map updated",
+  "error": null
+}
+```
+
+Response `404 Not Found` when the map does not exist; `400 Bad Request` on invalid or duplicate name.
+
+### Delete Map
+
+`DELETE /api/admin/maps/{id}`
+
+Deletion is blocked while any strats or pending strat submissions still reference the map. The map's bombsites are deleted together with the map.
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Map deleted",
+  "error": null
+}
+```
+
+Response `400 Bad Request`:
+
+```json
+{
+  "status": 400,
+  "data": null,
+  "message": null,
+  "error": "Cannot delete map 7: 1 strat(s) still reference it. Delete or reassign them first."
+}
+```
+
+Response `404 Not Found` when the map does not exist.
+
+### Add Bombsite
+
+`POST /api/admin/maps/{mapId}/bombsites`
+
+Request:
+
+```json
+{
+  "name": "Kitchen"
+}
+```
+
+Response `201 Created`:
+
+```json
+{
+  "status": 201,
+  "data": {
+    "bombsiteId": 116
+  },
+  "message": "Bombsite added",
+  "error": null
+}
+```
+
+Response `400 Bad Request` — invalid name, or the map already has a bombsite with that name. Response `404 Not Found` when the map does not exist.
+
+### Rename Bombsite
+
+`PUT /api/admin/maps/{mapId}/bombsites/{id}`
+
+Request:
+
+```json
+{
+  "name": "Garage"
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Bombsite updated",
+  "error": null
+}
+```
+
+Response `404 Not Found` when the bombsite does not exist or belongs to a different map.
+
+### Delete Bombsite
+
+`DELETE /api/admin/maps/{mapId}/bombsites/{id}`
+
+Strats and pending submissions that reference the bombsite are unlinked (their `bombsiteId` is set to `null`).
+
+Response `200 OK`:
+
+```json
+{
+  "status": 200,
+  "data": null,
+  "message": "Bombsite deleted",
+  "error": null
+}
+```
+
+Response `404 Not Found` when the bombsite does not exist or belongs to a different map.
 
 ## Categories
 
@@ -969,11 +1228,14 @@ Request:
   "name": "Oregon attic execute",
   "videoUrl": "https://youtube.com/watch?v=example",
   "mapId": 1,
+  "bombsiteId": 3,
   "description": "Open attic wall and plant behind half wall.",
   "categoryIds": [1, 2],
   "operatorIds": [1, 4]
 }
 ```
+
+`bombsiteId` is optional; when provided, the bombsite must exist and belong to the submitted map.
 
 Response `201 Created`:
 
@@ -1088,6 +1350,7 @@ Response `200 OK`:
       "name": "Oregon attic execute",
       "videoUrl": "https://youtube.com/watch?v=example",
       "mapId": 1,
+      "bombsiteId": 3,
       "description": "Open attic wall and plant behind half wall.",
       "submittedAt": "2026-06-30T12:00:00",
       "categoryIds": [1, 2],
@@ -1113,6 +1376,7 @@ Response `200 OK`:
     "name": "Oregon attic execute",
     "videoUrl": "https://youtube.com/watch?v=example",
     "mapId": 1,
+    "bombsiteId": 3,
     "description": "Open attic wall and plant behind half wall.",
     "submittedAt": "2026-06-30T12:00:00",
     "categoryIds": [1, 2],
@@ -1308,6 +1572,7 @@ Read endpoints:
 - `GET /api/strats/maps/{id}`
 - `GET /api/strats/maps/byname/{mapName}`
 - `GET /api/maps`
+- `GET /api/maps/{id}`
 - `GET /api/categories`
 - `GET /api/categories/{id}`
 - `GET /api/categories/category_name/{id}`
@@ -1330,6 +1595,12 @@ Trusted/admin mutation endpoints:
 - `DELETE /api/strats/{stratId}/categories/{categoryId}`
 - `POST /api/categories`
 - `DELETE /api/categories/{id}`
+- `POST /api/admin/maps`
+- `PUT /api/admin/maps/{id}`
+- `DELETE /api/admin/maps/{id}`
+- `POST /api/admin/maps/{mapId}/bombsites`
+- `PUT /api/admin/maps/{mapId}/bombsites/{id}`
+- `DELETE /api/admin/maps/{mapId}/bombsites/{id}`
 - `POST /api/operators/{operatorId}/assign/{stratId}`
 - `DELETE /api/operators/{operatorId}/remove/{stratId}`
 - `GET /api/submissions/admin/strats`

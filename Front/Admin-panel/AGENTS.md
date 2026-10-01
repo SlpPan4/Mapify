@@ -9,9 +9,10 @@ Mapify Admin Panel — одностраничное веб-приложение 
 
 - просмотра дашборда с pending-заявками и общей статистикой;
 - модерации заявок на стратки и категории (approve / reject / просмотр);
-- управления стратками (CRUD, привязка категорий и оперативников);
+- управления стратками (CRUD, привязка категорий, оперативников и бомбсайтов);
 - управления категориями (create/delete, редактирование пока не поддерживается бэкендом);
-- просмотра оперативников и карт (placeholder-страницы).
+- управления картами и их бомбсайтами (CRUD; удаление карты запрещено, если к ней привязаны стратки);
+- просмотра оперативников (placeholder-страница).
 
 Бэкенд — отдельный ASP.NET Core проект, расположенный в `C:/prog/Mapify/Back/MapifyBackend`. Фронтенд общается с ним по REST API.
 
@@ -55,6 +56,7 @@ C:/prog/Mapify/Front/Admin-panel
         │   ├── categories.js
         │   ├── operators.js
         │   ├── maps.js
+        │   ├── bombsites.js
         │   └── submissions.js
         ├── views/            # страницы, привязанные к маршрутам
         │   ├── DashboardView.vue
@@ -72,6 +74,7 @@ C:/prog/Mapify/Front/Admin-panel
         │   ├── StatusBadge.vue
         │   ├── StratFormModal.vue
         │   ├── CategoryFormModal.vue
+        │   ├── MapFormModal.vue
         │   ├── SubmissionDetailSlideOver.vue
         │   ├── VideoPlayer.vue
         │   └── PlaceholderPage.vue
@@ -131,7 +134,7 @@ npm run dev
 | `/strats/:id` | `StratDetailView` | детальная карточка стратки |
 | `/categories` | `CategoriesView` | управление категориями |
 | `/operators` | `OperatorsView` | placeholder |
-| `/maps` | `MapsView` | placeholder |
+| `/maps` | `MapsView` | управление картами и бомбсайтами |
 
 ### API-клиент
 
@@ -148,7 +151,7 @@ npm run dev
   - при прочих `!response.ok` бросает `Error` с текстом из `data.error || data.message || HTTP ${status}`;
   - возвращает `data.data ?? data`.
 
-API-модули (`strats.js`, `categories.js`, `operators.js`, `maps.js`, `submissions.js`) — тонкие обёртки вокруг `client.js`, сгруппированные по предметной области. Добавляй новые вызовы именно туда, а не прямо в компоненты.
+API-модули (`strats.js`, `categories.js`, `operators.js`, `maps.js`, `bombsites.js`, `submissions.js`) — тонкие обёртки вокруг `client.js`, сгруппированные по предметной области. Добавляй новые вызовы именно туда, а не прямо в компоненты.
 
 ### Состояние и уведомления
 
@@ -210,7 +213,8 @@ API-модули (`strats.js`, `categories.js`, `operators.js`, `maps.js`, `subm
 
 - Бэкенд не поддерживает редактирование категорий — кнопка Edit в `CategoriesView` показывает ошибку через toast.
 - У категорий в бэкенде нет полей `Description` и `CreatedAt`, поэтому в таблице отображаются только `ID`, `Name`, `Side`, `Actions`.
-- Страницы `/operators` и `/maps` — placeholder'ы (`PlaceholderPage`).
+- API-модуль `maps.js` покрывает публичный `GET /api/maps`/`GET /api/maps/{id}` и админские `POST/PUT/DELETE /api/admin/maps...`; бомбсайты — отдельный модуль `bombsites.js` (`/api/admin/maps/{mapId}/bombsites...`). Изменения бомбсайтов применяются диффом (create/update/delete по одному вызову) при сохранении карты.
+- Страница `/operators` — placeholder (`PlaceholderPage`).
 
 ## Полезные ссылки
 

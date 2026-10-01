@@ -108,16 +108,16 @@ public class StratsController : ControllerBase
         try
         {
             InputValidator.ValidateStratRequest(request);
-            int stratId = await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName, request.Description);
+            int stratId = await _stratService.CreateStrat(request.Name, request.VideoUrl, request.MapName, request.Description, request.BombsiteId);
             return Created($"/api/strats/{stratId}", ApiResponse.Created(new { stratId }, "Strategy added!"));
         }
         catch (ValidationException ex)
         {
             return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
-            return NotFound(ApiResponse.NotFound($"No map by the name {request.MapName}"));
+            return NotFound(ApiResponse.NotFound(ex.Message));
         }
         catch (Exception)
         {
@@ -166,9 +166,9 @@ public class StratsController : ControllerBase
         {
             return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
-            return NotFound(ApiResponse.NotFound($"No map by the name {request.MapName}"));
+            return NotFound(ApiResponse.NotFound(ex.Message));
         }
         catch (Exception)
         {
@@ -201,9 +201,9 @@ public class StratsController : ControllerBase
         {
             return BadRequest(ApiResponse.BadRequest(ex.Message));
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
-            return NotFound(ApiResponse.NotFound($"No map by the name {request.MapName}"));
+            return NotFound(ApiResponse.NotFound(ex.Message));
         }
         catch (Exception)
         {

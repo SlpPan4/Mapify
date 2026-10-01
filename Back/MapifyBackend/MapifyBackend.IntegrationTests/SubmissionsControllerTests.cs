@@ -311,6 +311,47 @@ public class SubmissionsControllerTests : ControllerTestsBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SubmitStrat_WithBombsiteId_ApprovalCopiesBombsite()
+    {
+        var request = CreateValidStratSubmissionRequest();
+        request.BombsiteId = 3; // seeded "Site C" of map 1
+
+        var submitResponse = await Client.PostAsJsonAsync("/api/submissions/strats", request);
+        submitResponse.EnsureSuccessStatusCode();
+        var submitResult = await submitResponse.ReadApiResponseAsync<object>();
+        Assert.NotNull(submitResult);
+        int submissionId = ((JsonElement)submitResult.Data!).GetProperty("submissionId").GetInt32();
+
+        // The pending submission exposes the bombsite ID.
+        var pendingResult = await (await Client.GetAsync($"/api/submissions/admin/strats/{submissionId}"))
+            .ReadApiResponseAsync<StratSubmission>();
+        Assert.NotNull(pendingResult?.Data);
+        Assert.Equal(3, pendingResult.Data.BombsiteId);
+
+        var approveResponse = await Client.PostAsync($"/api/submissions/admin/strats/{submissionId}/approve", null);
+        approveResponse.EnsureSuccessStatusCode();
+        var approveResult = await approveResponse.ReadApiResponseAsync<object>();
+        Assert.NotNull(approveResult);
+        int stratId = ((JsonElement)approveResult.Data!).GetProperty("stratId").GetInt32();
+
+        var stratResult = await (await Client.GetAsync($"/api/strats/{stratId}")).ReadApiResponseAsync<StratDetail>();
+        Assert.NotNull(stratResult?.Data?.Bombsite);
+        Assert.Equal(3, stratResult.Data.Bombsite.Id);
+        Assert.Equal("Site C", stratResult.Data.Bombsite.Name);
+    }
+
+    [Fact]
+    public async Task SubmitStrat_BombsiteFromAnotherMap_ReturnsBadRequest()
+    {
+        var request = CreateValidStratSubmissionRequest();
+        request.BombsiteId = 6; // belongs to map 2, request targets map 1
+
+        var response = await Client.PostAsJsonAsync("/api/submissions/strats", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private static StratSubmissionRequest CreateValidStratSubmissionRequest()
     {
         return new StratSubmissionRequest

@@ -5,14 +5,20 @@ namespace MapifyBackend.Utility.Api;
 
 /// <summary>
 /// Requires the <c>X-Api-Key</c> header on admin and mutating routes.
-/// Protects everything under <c>/api/submissions/admin</c> and all
-/// POST/PUT/PATCH/DELETE requests to <c>/api/strats</c>, <c>/api/categories</c>,
+/// Protects everything under <c>/api/submissions/admin</c> and <c>/api/admin/maps</c>,
+/// and all POST/PUT/PATCH/DELETE requests to <c>/api/strats</c>, <c>/api/categories</c>,
 /// and <c>/api/operators</c>. Public reads, public submissions, and CORS
 /// preflight (OPTIONS) requests pass through without a key.
 /// </summary>
 public class ApiKeyAuthMiddleware
 {
     public const string HeaderName = "X-Api-Key";
+
+    private static readonly string[] AlwaysProtectedPrefixes =
+    [
+        "/api/submissions/admin",
+        "/api/admin/maps"
+    ];
 
     private static readonly string[] MutatingProtectedPrefixes =
     [
@@ -51,8 +57,8 @@ public class ApiKeyAuthMiddleware
 
         string path = request.Path.Value ?? string.Empty;
 
-        // Admin submission review endpoints are always protected.
-        if (PathStartsWithSegment(path, "/api/submissions/admin"))
+        // Admin endpoints (submission review, map/bombsite management) are always protected.
+        if (AlwaysProtectedPrefixes.Any(prefix => PathStartsWithSegment(path, prefix)))
             return true;
 
         // Mutating requests to the main resources are protected.

@@ -74,7 +74,7 @@ public class DatabaseService
         }
 
         string whereClause = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : string.Empty;
-        string sql = $"SELECT s.id, s.name, s.video_url AS videoUrl, s.map_id AS mapId, s.description FROM strats s {whereClause} ORDER BY s.id";
+        string sql = $"SELECT s.id, s.name, s.video_url AS videoUrl, s.map_id AS mapId, s.description, s.bombsite_id AS bombsiteId FROM strats s {whereClause} ORDER BY s.id";
 
         return (await db.QueryAsync<Strat>(sql, parameters)).ToList();
     }
@@ -87,8 +87,8 @@ public class DatabaseService
     {
         await using SqliteConnection db = await GetConnectionAsync();
 
-        string sql = @"INSERT INTO strats (name, video_url, map_id, description)
-                   VALUES (@name, @videoUrl, @mapId, @description);
+        string sql = @"INSERT INTO strats (name, video_url, map_id, description, bombsite_id)
+                   VALUES (@name, @videoUrl, @mapId, @description, @bombsiteId);
                    SELECT last_insert_rowid();";
 
         return await db.QuerySingleAsync<int>(sql, new
@@ -96,7 +96,8 @@ public class DatabaseService
             name = strat.Name,
             videoUrl = strat.VideoUrl,
             mapId = strat.MapId,
-            description = strat.Description
+            description = strat.Description,
+            bombsiteId = strat.BombsiteId
         });
     }
 
@@ -108,9 +109,9 @@ public class DatabaseService
     public async Task<List<Strat>?> StratsByOperator(int operatorId)
     {
         await using SqliteConnection db = await GetConnectionAsync();
-        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description 
+        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description, bombsite_id AS bombsiteId
                         FROM strats
-                        JOIN strat_operators ON strats.id = strat_operators.strat_id 
+                        JOIN strat_operators ON strats.id = strat_operators.strat_id
                         WHERE strat_operators.operator_id = @operatorId";
         var result = await db.QueryAsync<Strat>(sql, new { operatorId });
         return result.ToList();
@@ -124,7 +125,7 @@ public class DatabaseService
     public async Task<List<Strat>?> StratsByMapId(int mapId)
     {
         await using SqliteConnection db = await GetConnectionAsync();
-        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description FROM strats WHERE map_id = @mapId";
+        string sql = @"SELECT id, name, video_url AS videoUrl, map_id AS mapId, description, bombsite_id AS bombsiteId FROM strats WHERE map_id = @mapId";
         var result = await db.QueryAsync<Strat>(sql, new { mapId });
         return result.ToList();
     }
@@ -150,7 +151,7 @@ public class DatabaseService
     public async Task<Strat?> GetStratById(int stratId)
     {
         await using SqliteConnection db = await GetConnectionAsync();
-        string sql = "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description " +
+        string sql = "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description, bombsite_id AS bombsiteId " +
                      "FROM strats " +
                      "WHERE id = @strat_id";
         var result = await db.QuerySingleOrDefaultAsync<Strat>(sql, new { strat_id = stratId });
@@ -170,6 +171,10 @@ public class DatabaseService
         if (strat == null) return null;
 
         Map? map = await GetMapById(strat.MapId);
+
+        Bombsite? bombsite = null;
+        if (strat.BombsiteId.HasValue)
+            bombsite = await GetBombsiteById(strat.BombsiteId.Value);
 
         List<Category> categories = (await db.QueryAsync<Category>(
             """
@@ -198,6 +203,7 @@ public class DatabaseService
             VideoUrl = strat.VideoUrl,
             Description = strat.Description,
             Map = map!,
+            Bombsite = bombsite,
             Categories = categories,
             Operators = operators
         };
@@ -212,9 +218,10 @@ public class DatabaseService
         await using SqliteConnection db = await GetConnectionAsync();
 
         List<Strat> strats = (await db.QueryAsync<Strat>(
-            "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description FROM strats ORDER BY id")).ToList();
+            "SELECT id, name, video_url AS videoUrl, map_id AS mapId, description, bombsite_id AS bombsiteId FROM strats ORDER BY id")).ToList();
 
         List<Map> maps = (await db.QueryAsync<Map>("SELECT id, name FROM maps")).ToList();
+        List<Bombsite> allBombsites = (await db.QueryAsync<Bombsite>("SELECT id, map_id AS mapId, name FROM bombsites")).ToList();
         List<Category> allCategories = (await db.QueryAsync<Category>("SELECT id, name, side FROM categories")).ToList();
         List<Operator> allOperators = (await db.QueryAsync<Operator>("SELECT id, name, side FROM operators")).ToList();
 
@@ -233,6 +240,7 @@ public class DatabaseService
                 g => g.Select(x => allOperators.First(o => o.Id == x.operatorId)).ToList());
 
         Dictionary<int, Map> mapById = maps.ToDictionary(m => m.Id);
+        Dictionary<int, Bombsite> bombsiteById = allBombsites.ToDictionary(b => b.Id);
 
         return strats.Select(s =>
         {
@@ -249,6 +257,7 @@ public class DatabaseService
                 VideoUrl = s.VideoUrl,
                 Description = s.Description,
                 Map = mapById.GetValueOrDefault(s.MapId) ?? new Map(s.MapId, $"Map {s.MapId}"),
+                Bombsite = s.BombsiteId.HasValue ? bombsiteById.GetValueOrDefault(s.BombsiteId.Value) : null,
                 Side = side,
                 Categories = cats ?? [],
                 Operators = ops ?? []
@@ -279,7 +288,8 @@ public class DatabaseService
                         SET name = @name,
                             video_url = @videoUrl,
                             map_id = @mapId,
-                            description = @description
+                            description = @description,
+                            bombsite_id = @bombsiteId
                         WHERE id = @id";
 
         int rows = await db.ExecuteAsync(sql, new
@@ -288,7 +298,8 @@ public class DatabaseService
             name = strat.Name,
             videoUrl = strat.VideoUrl,
             mapId = strat.MapId,
-            description = strat.Description
+            description = strat.Description,
+            bombsiteId = strat.BombsiteId
         });
 
         return rows > 0;
@@ -315,6 +326,140 @@ public class DatabaseService
         await using SqliteConnection db = await GetConnectionAsync();
         string sql = "SELECT * FROM maps WHERE id=@id";
         return await db.QuerySingleOrDefaultAsync<Map>(sql, new { id = id });
+    }
+
+    /// <summary>
+    /// Retrieves a map by its ID, including all of its bombsites.
+    /// </summary>
+    /// <param name="id">The ID of the map.</param>
+    /// <returns>A <see cref="Map"/> object with <see cref="Map.Bombsites"/> populated if found; otherwise, null.</returns>
+    public async Task<Map?> GetMapWithBombsitesById(int id)
+    {
+        Map? map = await GetMapById(id);
+        if (map == null) return null;
+
+        map.Bombsites = await GetBombsitesByMapId(id);
+        return map;
+    }
+
+    /// <summary>
+    /// Adds a new map to the database. The name is stored exactly as provided (trimmed).
+    /// </summary>
+    /// <param name="name">The name of the map.</param>
+    /// <returns>The generated map ID.</returns>
+    public async Task<int> AddMap(string name)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "INSERT INTO maps (name) VALUES (@name); SELECT last_insert_rowid();";
+        return await db.QuerySingleAsync<int>(sql, new { name = name.Trim() });
+    }
+
+    /// <summary>
+    /// Renames an existing map. The name is stored exactly as provided (trimmed).
+    /// </summary>
+    /// <param name="id">The ID of the map to rename.</param>
+    /// <param name="name">The new map name.</param>
+    /// <returns>True if the map was found and updated; otherwise, false.</returns>
+    public async Task<bool> UpdateMap(int id, string name)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "UPDATE maps SET name=@name WHERE id=@id";
+        int rows = await db.ExecuteAsync(sql, new { id, name = name.Trim() });
+        return rows > 0;
+    }
+
+    /// <summary>
+    /// Deletes a map from the database. Deletion is blocked when any strats
+    /// or pending strat submissions still reference the map.
+    /// </summary>
+    /// <param name="id">The ID of the map to delete.</param>
+    /// <exception cref="InvalidOperationException">Thrown when strats or pending submissions reference the map.</exception>
+    public async Task DeleteMap(int id)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+
+        int stratCount = await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM strats WHERE map_id=@id", new { id });
+        if (stratCount > 0)
+            throw new InvalidOperationException(
+                $"Cannot delete map {id}: {stratCount} strat(s) still reference it. Delete or reassign them first.");
+
+        int pendingCount = await db.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pending_strat_submissions WHERE map_id=@id", new { id });
+        if (pendingCount > 0)
+            throw new InvalidOperationException(
+                $"Cannot delete map {id}: {pendingCount} pending strat submission(s) still reference it. Reject them first.");
+
+        await db.ExecuteAsync("DELETE FROM maps WHERE id=@id", new { id });
+    }
+
+    /// <summary>
+    /// Retrieves a single bombsite by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the bombsite.</param>
+    /// <returns>A <see cref="Bombsite"/> object if found; otherwise, null.</returns>
+    public async Task<Bombsite?> GetBombsiteById(int id)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "SELECT id, map_id AS mapId, name FROM bombsites WHERE id=@id";
+        return await db.QuerySingleOrDefaultAsync<Bombsite>(sql, new { id });
+    }
+
+    /// <summary>
+    /// Retrieves all bombsites that belong to a map.
+    /// </summary>
+    /// <param name="mapId">The ID of the map.</param>
+    /// <returns>A list of <see cref="Bombsite"/> objects for the map.</returns>
+    public async Task<List<Bombsite>> GetBombsitesByMapId(int mapId)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "SELECT id, map_id AS mapId, name FROM bombsites WHERE map_id=@mapId ORDER BY id";
+        return (await db.QueryAsync<Bombsite>(sql, new { mapId })).ToList();
+    }
+
+    /// <summary>
+    /// Adds a new bombsite to a map. The name is stored exactly as provided (trimmed).
+    /// </summary>
+    /// <param name="mapId">The ID of the map the bombsite belongs to.</param>
+    /// <param name="name">The name of the bombsite.</param>
+    /// <returns>The generated bombsite ID.</returns>
+    public async Task<int> AddBombsite(int mapId, string name)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "INSERT INTO bombsites (map_id, name) VALUES (@mapId, @name); SELECT last_insert_rowid();";
+        return await db.QuerySingleAsync<int>(sql, new { mapId, name = name.Trim() });
+    }
+
+    /// <summary>
+    /// Renames an existing bombsite. The name is stored exactly as provided (trimmed).
+    /// </summary>
+    /// <param name="id">The ID of the bombsite to rename.</param>
+    /// <param name="name">The new bombsite name.</param>
+    /// <returns>True if the bombsite was found and updated; otherwise, false.</returns>
+    public async Task<bool> UpdateBombsite(int id, string name)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        string sql = "UPDATE bombsites SET name=@name WHERE id=@id";
+        int rows = await db.ExecuteAsync(sql, new { id, name = name.Trim() });
+        return rows > 0;
+    }
+
+    /// <summary>
+    /// Deletes a bombsite. Strats and pending submissions that reference it
+    /// are first unlinked (their bombsite_id is set to NULL).
+    /// </summary>
+    /// <param name="id">The ID of the bombsite to delete.</param>
+    /// <returns>True if the bombsite was found and deleted; otherwise, false.</returns>
+    public async Task<bool> DeleteBombsite(int id)
+    {
+        await using SqliteConnection db = await GetConnectionAsync();
+        await using var transaction = await db.BeginTransactionAsync();
+
+        await db.ExecuteAsync("UPDATE strats SET bombsite_id = NULL WHERE bombsite_id=@id", new { id }, transaction);
+        await db.ExecuteAsync("UPDATE pending_strat_submissions SET bombsite_id = NULL WHERE bombsite_id=@id", new { id }, transaction);
+        int rows = await db.ExecuteAsync("DELETE FROM bombsites WHERE id=@id", new { id }, transaction);
+
+        await transaction.CommitAsync();
+        return rows > 0;
     }
 
     /// <summary>
@@ -433,7 +578,7 @@ public class DatabaseService
     public async Task<List<Strat>?> GetStratsByCategory(int categoryId)
     {
         await using SqliteConnection db = await GetConnectionAsync();
-        string sql = "SELECT s.id, s.name, s.video_url AS videoUrl, s.map_id AS mapId, s.description " +
+        string sql = "SELECT s.id, s.name, s.video_url AS videoUrl, s.map_id AS mapId, s.description, s.bombsite_id AS bombsiteId " +
                      "FROM strats s " +
                      "JOIN strat_categories sc ON s.id = sc.strat_id " +
                      "WHERE sc.category_id = @categoryId";
@@ -577,8 +722,8 @@ public class DatabaseService
 
         int submissionId = await db.QuerySingleAsync<int>(
             """
-            INSERT INTO pending_strat_submissions (name, video_url, map_id, description)
-            VALUES (@name, @videoUrl, @mapId, @description);
+            INSERT INTO pending_strat_submissions (name, video_url, map_id, description, bombsite_id)
+            VALUES (@name, @videoUrl, @mapId, @description, @bombsiteId);
             SELECT last_insert_rowid();
             """,
             new
@@ -586,7 +731,8 @@ public class DatabaseService
                 name = submission.Name,
                 videoUrl = submission.VideoUrl,
                 mapId = submission.MapId,
-                description = submission.Description
+                description = submission.Description,
+                bombsiteId = submission.BombsiteId
             },
             transaction);
 
@@ -624,7 +770,7 @@ public class DatabaseService
     {
         await using SqliteConnection db = await GetConnectionAsync();
         string sql = """
-                     SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+                     SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, bombsite_id AS BombsiteId, submitted_at AS SubmittedAt
                      FROM pending_strat_submissions
                      ORDER BY submitted_at ASC, id ASC
                      """;
@@ -648,7 +794,7 @@ public class DatabaseService
         await using SqliteConnection db = await GetConnectionAsync();
         StratSubmission? submission = await db.QuerySingleOrDefaultAsync<StratSubmission>(
             """
-            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, bombsite_id AS BombsiteId, submitted_at AS SubmittedAt
             FROM pending_strat_submissions
             WHERE id=@id
             """,
@@ -672,7 +818,7 @@ public class DatabaseService
 
         StratSubmission? submission = await db.QuerySingleOrDefaultAsync<StratSubmission>(
             """
-            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, submitted_at AS SubmittedAt
+            SELECT id, name, video_url AS VideoUrl, map_id AS MapId, description, bombsite_id AS BombsiteId, submitted_at AS SubmittedAt
             FROM pending_strat_submissions
             WHERE id=@id
             """,
@@ -687,8 +833,8 @@ public class DatabaseService
 
         int stratId = await db.QuerySingleAsync<int>(
             """
-            INSERT INTO strats (name, video_url, map_id, description)
-            VALUES (@name, @videoUrl, @mapId, @description);
+            INSERT INTO strats (name, video_url, map_id, description, bombsite_id)
+            VALUES (@name, @videoUrl, @mapId, @description, @bombsiteId);
             SELECT last_insert_rowid();
             """,
             new
@@ -696,7 +842,8 @@ public class DatabaseService
                 name = submission.Name,
                 videoUrl = submission.VideoUrl,
                 mapId = submission.MapId,
-                description = submission.Description
+                description = submission.Description,
+                bombsiteId = submission.BombsiteId
             },
             transaction);
 

@@ -35,6 +35,7 @@ public static class InputValidator
         ValidateString(request.Name, "Name", 100);
         ValidateString(request.VideoUrl, "VideoUrl", 500);
         ValidateString(request.MapName, "MapName", 100);
+        ValidateBombsiteId(request.BombsiteId);
     }
 
     public static void ValidateStratUpdateRequest(StratUpdateRequest request)
@@ -42,6 +43,7 @@ public static class InputValidator
         ValidateString(request.Name, "Name", 100);
         ValidateString(request.VideoUrl, "VideoUrl", 500);
         ValidateString(request.MapName, "MapName", 100);
+        ValidateBombsiteId(request.BombsiteId);
 
         if (request.Description is { Length: > 1000 })
             throw new ValidationException("Description must be less than 1000 characters");
@@ -52,9 +54,26 @@ public static class InputValidator
         ValidateOptionalString(request.Name, "Name", 100);
         ValidateOptionalString(request.VideoUrl, "VideoUrl", 500);
         ValidateOptionalString(request.MapName, "MapName", 100);
+        ValidateBombsiteId(request.BombsiteId);
 
         if (request.Description is { Length: > 1000 })
             throw new ValidationException("Description must be less than 1000 characters");
+    }
+
+    public static void ValidateMapRequest(MapRequest request)
+    {
+        ValidateString(request.Name, "Name", 100);
+    }
+
+    public static void ValidateBombsiteRequest(BombsiteRequest request)
+    {
+        ValidateString(request.Name, "Name", 100);
+    }
+
+    private static void ValidateBombsiteId(int? bombsiteId)
+    {
+        if (bombsiteId is <= 0)
+            throw new ValidationException("BombsiteId must be a positive ID");
     }
 
     public static void ValidateCategoryRequest(CategoryRequest request)
@@ -74,6 +93,8 @@ public static class InputValidator
 
         if (request.MapId <= 0)
             throw new ValidationException("MapId must be a positive ID");
+
+        ValidateBombsiteId(request.BombsiteId);
 
         if (request.Description is { Length: > 1000 })
             throw new ValidationException("Description must be less than 1000 characters");

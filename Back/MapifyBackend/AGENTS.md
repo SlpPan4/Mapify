@@ -26,16 +26,18 @@ MapifyBackend/
 ├── appsettings.Development.json            # Dev admin key + CORS origins (safe to commit)
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # ASP.NET Core API controllers
+│   ├── AdminMapsController.cs
 │   ├── CategoriesController.cs
 │   ├── MapsController.cs
 │   ├── OperatorsController.cs
 │   ├── StratsController.cs
 │   └── SubmissionsController.cs
 ├── database_files/
-│   ├── DatabaseInitializer.cs              # Runs schema script on startup
+│   ├── DatabaseInitializer.cs              # Runs schema script on startup, applies column migrations, seeds bombsites
 │   ├── DatabaseService.cs                  # All Dapper/SQLite data access
 │   ├── mainschema.sql                      # Schema + seed data
 │   ├── Entities/                           # Plain domain models
+│   │   ├── Bombsite.cs
 │   │   ├── Category.cs
 │   │   ├── CategorySubmission.cs
 │   │   ├── Map.cs
@@ -43,6 +45,7 @@ MapifyBackend/
 │   │   ├── Strat.cs
 │   │   └── StratSubmission.cs
 │   └── Services/                           # Thin service layer
+│       ├── BombsiteService.cs
 │       ├── CategoryService.cs
 │       ├── MapService.cs
 │       ├── OperatorService.cs
@@ -56,8 +59,10 @@ MapifyBackend/
     │   └── SubmissionRateLimitOptions.cs   # Rate-limit settings for public submission POSTs
     ├── DataNormalizingHelpers/StringHelper.cs
     ├── DTOs/                               # API request models
+    │   ├── BombsiteRequest.cs
     │   ├── CategoryRequest.cs
     │   ├── CategorySubmissionRequest.cs
+    │   ├── MapRequest.cs
     │   ├── StratRequest.cs
     │   └── StratSubmissionRequest.cs
     └── Enums/Side.cs                       # Attack / Defense enum
@@ -67,7 +72,9 @@ MapifyBackend.IntegrationTests/
 ├── CustomWebApplicationFactory.cs          # Isolated temp-database factory; overrides AdminApi:Key with a test key
 ├── HttpResponseMessageExtensions.cs        # Test JSON helpers (includes enum converter)
 ├── AdminAuthTests.cs                       # API-key middleware coverage (401 / public routes)
+├── AdminMapsControllerTests.cs             # Admin map/bombsite CRUD + API-key coverage
 ├── CategoriesControllerTests.cs
+├── MapsControllerTests.cs
 ├── OperatorsControllerTests.cs
 ├── StratsControllerTests.cs
 ├── SubmissionsControllerTests.cs
@@ -136,13 +143,14 @@ New controller tests should follow the existing pattern in `MapifyBackend.Integr
 All controllers live under `/api`:
 
 - `/api/strats` — read/create/delete strats, get strats by category/map/operator, assign/remove categories, enriched summaries
-- `/api/maps` — read all maps
+- `/api/maps` — read all maps, read one map with its bombsites
 - `/api/categories` — read/create/delete categories
 - `/api/operators` — read operators, assign/remove operators from strats
 - `/api/submissions` — public user submissions
   - `POST /api/submissions/strats`
   - `POST /api/submissions/categories`
 - `/api/submissions/admin/...` — pending submission review (list, approve, reject)
+- `/api/admin/maps` — admin map CRUD and bombsite CRUD (all methods require the API key)
 
 See `API_DOCUMENTATION.md` for full request/response details.
 

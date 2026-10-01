@@ -394,4 +394,134 @@ public class StratsControllerTests : ControllerTestsBase
         Assert.NotNull(getResult.Data);
         Assert.Equal("This description should be persisted", getResult.Data.Description);
     }
+
+    [Fact]
+    public async Task Create_WithBombsiteId_PersistsBombsite()
+    {
+        // Bombsite 1 is the seeded "Site A" of map 1 (Oregon).
+        var request = new StratRequest
+        {
+            Name = "Bombsite Test Strat",
+            VideoUrl = "https://example.com/bombsite",
+            MapName = "Oregon",
+            BombsiteId = 1
+        };
+
+        var createResponse = await Client.PostAsJsonAsync("/api/strats", request);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var createResult = await createResponse.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(createResult?.Data);
+        int stratId = ((System.Text.Json.JsonElement)createResult.Data).GetProperty("stratId").GetInt32();
+
+        var getResult = await (await Client.GetAsync($"/api/strats/{stratId}")).ReadApiResponseAsync<StratDetail>();
+        Assert.NotNull(getResult?.Data);
+        Assert.NotNull(getResult.Data.Bombsite);
+        Assert.Equal(1, getResult.Data.Bombsite.Id);
+        Assert.Equal("Site A", getResult.Data.Bombsite.Name);
+        Assert.Equal(getResult.Data.Map.Id, getResult.Data.Bombsite.MapId);
+    }
+
+    [Fact]
+    public async Task Create_WithBombsiteFromAnotherMap_ReturnsBadRequest()
+    {
+        // Bombsite 6 belongs to map 2, not to map 1 (Oregon).
+        var request = new StratRequest
+        {
+            Name = "Wrong Map Bombsite",
+            VideoUrl = "https://example.com/bombsite",
+            MapName = "Oregon",
+            BombsiteId = 6
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/strats", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithNonExistingBombsite_ReturnsNotFound()
+    {
+        var request = new StratRequest
+        {
+            Name = "Missing Bombsite",
+            VideoUrl = "https://example.com/bombsite",
+            MapName = "Oregon",
+            BombsiteId = 999999
+        };
+
+        var response = await Client.PostAsJsonAsync("/api/strats", request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateStrat_WithBombsiteId_PersistsBombsite()
+    {
+        // Strat 1 is on map 7 (Coastline); bombsite 31 is its seeded "Site A".
+        var request = new StratUpdateRequest
+        {
+            Name = "Updated Strat",
+            VideoUrl = "https://updated.example.com",
+            MapName = "Coastline",
+            BombsiteId = 31
+        };
+
+        var response = await Client.PutAsJsonAsync("/api/strats/1", request);
+
+        response.EnsureSuccessStatusCode();
+
+        var getResult = await (await Client.GetAsync("/api/strats/1")).ReadApiResponseAsync<StratDetail>();
+        Assert.NotNull(getResult?.Data?.Bombsite);
+        Assert.Equal(31, getResult.Data.Bombsite.Id);
+    }
+
+    [Fact]
+    public async Task PatchStrat_WithBombsiteId_PersistsBombsite()
+    {
+        // Strat 1 is on map 7 (Coastline); bombsite 32 is its seeded "Site B".
+        var request = new StratPatchRequest
+        {
+            BombsiteId = 32
+        };
+
+        var response = await Client.PatchAsJsonAsync("/api/strats/1", request);
+
+        response.EnsureSuccessStatusCode();
+
+        var getResult = await (await Client.GetAsync("/api/strats/1")).ReadApiResponseAsync<StratDetail>();
+        Assert.NotNull(getResult?.Data?.Bombsite);
+        Assert.Equal(32, getResult.Data.Bombsite.Id);
+        Assert.Equal("Site B", getResult.Data.Bombsite.Name);
+    }
+
+    [Fact]
+    public async Task GetSummary_IncludesBombsite()
+    {
+        var request = new StratRequest
+        {
+            Name = "Summary Bombsite Strat",
+            VideoUrl = "https://example.com/summary",
+            MapName = "Oregon",
+            BombsiteId = 1
+        };
+
+        var createResponse = await Client.PostAsJsonAsync("/api/strats", request);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var createResult = await createResponse.Content.ReadFromJsonAsync<ApiResponse>();
+        Assert.NotNull(createResult?.Data);
+        int stratId = ((System.Text.Json.JsonElement)createResult.Data).GetProperty("stratId").GetInt32();
+
+        var response = await Client.GetAsync("/api/strats/summary");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.ReadApiResponseAsync<List<StratSummary>>();
+        Assert.NotNull(result?.Data);
+
+        var strat = result.Data.FirstOrDefault(s => s.Id == stratId);
+        Assert.NotNull(strat);
+        Assert.NotNull(strat.Bombsite);
+        Assert.Equal(1, strat.Bombsite.Id);
+        Assert.Equal("Site A", strat.Bombsite.Name);
+    }
 }

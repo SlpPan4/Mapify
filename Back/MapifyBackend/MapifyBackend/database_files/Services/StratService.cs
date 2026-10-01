@@ -1,3 +1,4 @@
+using MapifyBackend.Utility;
 using MapifyBackend.Utility.DTOs;
 
 namespace MapifyBackend.database_files;
@@ -25,16 +26,38 @@ public class StratService
     /// <param name="name">The name of the strategy.</param>
     /// <param name="videoUrl">The URL of the strategy's video guide.</param>
     /// <param name="mapName">The name of the map this strategy belongs to.</param>
-    /// <exception cref="ArgumentException">Thrown when the specified map name does not exist in the database.</exception>
-    public async Task<int> CreateStrat(string name, string videoUrl, string mapName, string? description = null)
+    /// <param name="bombsiteId">Optional ID of the bombsite this strategy targets; must belong to the map.</param>
+    /// <exception cref="ArgumentException">Thrown when the specified map name or bombsite ID does not exist in the database.</exception>
+    /// <exception cref="ValidationException">Thrown when the bombsite does not belong to the map.</exception>
+    public async Task<int> CreateStrat(string name, string videoUrl, string mapName, string? description = null, int? bombsiteId = null)
     {
         int? mapId = await GetMapIdByName(mapName);
 
         if (mapId == null)
             throw new ArgumentException($"Map '{mapName}' does not exist");
 
-        Strat strat = new Strat(name, videoUrl, mapId.Value, description);
+        await ValidateBombsiteForMap(bombsiteId, mapId.Value);
+
+        Strat strat = new Strat(name, videoUrl, mapId.Value, description) { BombsiteId = bombsiteId };
         return await _dbService.AddStrat(strat);
+    }
+
+    /// <summary>
+    /// Validates that a bombsite exists and belongs to the given map.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the bombsite does not exist.</exception>
+    /// <exception cref="ValidationException">Thrown when the bombsite belongs to a different map.</exception>
+    private async Task ValidateBombsiteForMap(int? bombsiteId, int mapId)
+    {
+        if (!bombsiteId.HasValue)
+            return;
+
+        Bombsite? bombsite = await _dbService.GetBombsiteById(bombsiteId.Value);
+        if (bombsite == null)
+            throw new ArgumentException($"Bombsite by id {bombsiteId.Value} does not exist");
+
+        if (bombsite.MapId != mapId)
+            throw new ValidationException($"Bombsite {bombsiteId.Value} does not belong to map {mapId}");
     }
 
     /// <summary>
@@ -128,10 +151,13 @@ public class StratService
         if (mapId == null)
             throw new ArgumentException($"Map '{request.MapName}' does not exist");
 
+        await ValidateBombsiteForMap(request.BombsiteId, mapId.Value);
+
         existing.Name = request.Name;
         existing.VideoUrl = request.VideoUrl;
         existing.MapId = mapId.Value;
         existing.Description = request.Description;
+        existing.BombsiteId = request.BombsiteId;
 
         return await _dbService.UpdateStrat(existing);
     }
@@ -154,6 +180,12 @@ public class StratService
             if (mapId == null)
                 throw new ArgumentException($"Map '{request.MapName}' does not exist");
             existing.MapId = mapId.Value;
+        }
+
+        if (request.BombsiteId.HasValue)
+        {
+            await ValidateBombsiteForMap(request.BombsiteId, existing.MapId);
+            existing.BombsiteId = request.BombsiteId;
         }
 
         if (request.Name != null)

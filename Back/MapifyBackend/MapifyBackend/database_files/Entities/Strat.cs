@@ -7,6 +7,7 @@ public class Strat
     public string VideoUrl { get; set; } = null!; //URL for the video of the strat
     public int MapId { get; set; } //ID of the map
     public string? Description { get; set; }
+    public int? BombsiteId { get; set; } //ID of the bombsite, if the strat targets one
 
     public Strat(string stratName, string videoUrl, int mapId)
     {

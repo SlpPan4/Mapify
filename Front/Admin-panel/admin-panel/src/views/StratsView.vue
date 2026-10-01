@@ -26,12 +26,22 @@ const operators = ref([])
 const maps = ref([])
 const search = ref('')
 const sideFilter = ref('all')
+const bombsiteFilter = ref('all')
 const loading = ref(false)
 const modal = ref({ open: false, mode: 'create', strat: null })
+
+const bombsiteOptions = computed(() => {
+  const seen = new Map()
+  for (const s of strats.value) {
+    if (s.bombsite && !seen.has(s.bombsite.id)) seen.set(s.bombsite.id, s.bombsite.name)
+  }
+  return [...seen.entries()].map(([id, name]) => ({ id, name }))
+})
 
 const rows = computed(() => {
   return strats.value.filter((s) => {
     if (sideFilter.value !== 'all' && s.side !== sideFilter.value) return false
+    if (bombsiteFilter.value !== 'all' && String(s.bombsite?.id) !== bombsiteFilter.value) return false
     if (search.value && !s.name.toLowerCase().includes(search.value.toLowerCase())) return false
     return true
   })
@@ -82,6 +92,7 @@ async function handleSave(form) {
       name: form.name,
       videoUrl: form.videoUrl || '',
       mapName,
+      bombsiteId: form.bombsiteId ?? null,
       description: form.description,
     }
 
@@ -178,6 +189,13 @@ onMounted(() => {
           {{ f === 'all' ? 'All' : f }}
         </button>
       </div>
+      <select
+        v-model="bombsiteFilter"
+        class="bg-[#1C1C1F] border border-[#2A2A2E] rounded text-xs text-[#9CA3AF] px-3 py-2 focus:outline-none focus:border-[#DC2626] transition-colors"
+      >
+        <option value="all">All Bombsites</option>
+        <option v-for="b in bombsiteOptions" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
+      </select>
       <div class="flex-1"></div>
       <button
         @click="openCreateModal"
@@ -201,7 +219,7 @@ onMounted(() => {
       <table v-else class="w-full">
         <thead>
           <tr class="border-b border-[#2A2A2E]">
-            <th v-for="h in ['ID', 'Name', 'Side', 'Map', 'Categories', 'Operators', 'Actions']" :key="h" class="text-left text-[10px] text-[#9CA3AF] font-mono tracking-widest uppercase px-5 py-2.5 whitespace-nowrap">
+            <th v-for="h in ['ID', 'Name', 'Side', 'Map', 'Bombsite', 'Categories', 'Operators', 'Actions']" :key="h" class="text-left text-[10px] text-[#9CA3AF] font-mono tracking-widest uppercase px-5 py-2.5 whitespace-nowrap">
               {{ h }}
             </th>
           </tr>
@@ -217,6 +235,10 @@ onMounted(() => {
             <td class="px-5 py-3.5"><span class="text-white text-sm font-medium">{{ row.name }}</span></td>
             <td class="px-5 py-3.5"><SideBadge :side="row.side" /></td>
             <td class="px-5 py-3.5"><span class="text-[#9CA3AF] text-sm">{{ row.map.name }}</span></td>
+            <td class="px-5 py-3.5">
+              <span v-if="row.bombsite" class="px-1.5 py-0.5 bg-[#141416] border border-[#2A2A2E] rounded text-[10px] text-[#9CA3AF] font-mono">{{ row.bombsite.name }}</span>
+              <span v-else class="text-[#9CA3AF] text-sm">—</span>
+            </td>
             <td class="px-5 py-3.5">
               <div class="flex flex-wrap gap-1">
                 <span v-for="c in row.categories.slice(0, 2)" :key="c.id" class="px-1.5 py-0.5 bg-[#141416] border border-[#2A2A2E] rounded text-[10px] text-[#9CA3AF] font-mono">{{ c.name }}</span>

@@ -5,13 +5,23 @@ CREATE TABLE IF NOT EXISTS maps (
     name TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS bombsites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    map_id INT NOT NULL,
+    name TEXT NOT NULL,
+    UNIQUE(map_id, name),
+    FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS strats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     video_url TEXT NOT NULL,
     map_id INT NOT NULL,
     description TEXT,
-    FOREIGN KEY (map_id) REFERENCES maps(id)
+    bombsite_id INT NULL,
+    FOREIGN KEY (map_id) REFERENCES maps(id),
+    FOREIGN KEY (bombsite_id) REFERENCES bombsites(id)
 );
 
 
@@ -56,8 +66,10 @@ CREATE TABLE IF NOT EXISTS pending_strat_submissions (
     video_url TEXT NOT NULL,
     map_id INT NOT NULL,
     description TEXT,
+    bombsite_id INT NULL,
     submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (map_id) REFERENCES maps(id)
+    FOREIGN KEY (map_id) REFERENCES maps(id),
+    FOREIGN KEY (bombsite_id) REFERENCES bombsites(id)
 );
 
 CREATE TABLE IF NOT EXISTS pending_strat_submission_categories (

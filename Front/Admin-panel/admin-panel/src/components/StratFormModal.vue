@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { getMap } from '../api/maps.js'
 
 const props = defineProps({
   open: Boolean,
@@ -19,6 +20,7 @@ const defaultForm = {
   name: '',
   side: 'Attack',
   mapId: null,
+  bombsiteId: null,
   description: '',
   videoUrl: '',
   categoryIds: [],
@@ -26,6 +28,19 @@ const defaultForm = {
 }
 
 const form = ref({ ...defaultForm })
+const bombsites = ref([])
+let loadedMapId = null
+
+async function loadBombsites(mapId) {
+  bombsites.value = []
+  if (!mapId) return
+  try {
+    const detail = await getMap(mapId)
+    bombsites.value = detail?.bombsites || []
+  } catch {
+    bombsites.value = []
+  }
+}
 
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
@@ -34,6 +49,7 @@ watch(() => props.open, (isOpen) => {
         name: props.strat.name || '',
         side: props.strat.side || 'Attack',
         mapId: props.strat.map?.id ?? props.strat.mapId ?? props.maps[0]?.id ?? null,
+        bombsiteId: props.strat.bombsite?.id ?? null,
         description: props.strat.description || '',
         videoUrl: props.strat.videoUrl || '',
         categoryIds: props.strat.categories?.map((c) => c.id) || [],
@@ -45,7 +61,16 @@ watch(() => props.open, (isOpen) => {
         mapId: props.maps[0]?.id || null,
       }
     }
+    loadedMapId = form.value.mapId
+    loadBombsites(loadedMapId)
   }
+})
+
+watch(() => form.value.mapId, (mapId) => {
+  if (!props.open || mapId === loadedMapId) return
+  loadedMapId = mapId
+  form.value.bombsiteId = null
+  loadBombsites(mapId)
 })
 
 const filteredCategories = computed(() =>
@@ -97,7 +122,7 @@ function handleClose() {
           </button>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <form @submit.prevent="handleSubmit" class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
           <div>
             <label class="block text-[10px] font-mono text-[#9CA3AF] uppercase tracking-widest mb-2">Strat Name <span class="text-[#DC2626]">*</span></label>
             <input
@@ -137,6 +162,17 @@ function handleClose() {
               class="w-full bg-[#0B0B0C] border border-[#2A2A2E] rounded text-sm text-white px-3 py-2.5 focus:outline-none focus:border-[#DC2626] transition-colors"
             >
               <option v-for="m in maps" :key="m.id" :value="m.id">{{ m.name }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-mono text-[#9CA3AF] uppercase tracking-widest mb-2">Bombsite</label>
+            <select
+              v-model="form.bombsiteId"
+              class="w-full bg-[#0B0B0C] border border-[#2A2A2E] rounded text-sm text-white px-3 py-2.5 focus:outline-none focus:border-[#DC2626] transition-colors"
+            >
+              <option :value="null">—</option>
+              <option v-for="b in bombsites" :key="b.id" :value="b.id">{{ b.name }}</option>
             </select>
           </div>
 

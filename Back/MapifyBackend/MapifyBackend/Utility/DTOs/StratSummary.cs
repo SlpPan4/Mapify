@@ -12,6 +12,7 @@ public class StratSummary
     public string VideoUrl { get; set; } = null!;
     public string? Description { get; set; }
     public Map Map { get; set; } = null!;
+    public Bombsite? Bombsite { get; set; }
     public string Side { get; set; } = null!;
     public List<Category> Categories { get; set; } = [];
     public List<Operator> Operators { get; set; } = [];

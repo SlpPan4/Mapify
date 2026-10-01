@@ -56,6 +56,7 @@ async function handleSave(form) {
       name: form.name,
       videoUrl: form.videoUrl || '',
       mapName: map?.name || '',
+      bombsiteId: form.bombsiteId ?? null,
       description: form.description,
     })
 
@@ -251,6 +252,11 @@ onMounted(() => {
               </svg>
               <span class="text-white font-medium text-sm">{{ strat.map.name }}</span>
             </div>
+          </div>
+          <div class="h-px bg-[#2A2A2E]" />
+          <div>
+            <div class="text-[11px] tracking-[0.18em] uppercase mb-2 text-[#9CA3AF]" style="font-family: 'Rajdhani', sans-serif; font-weight: 600;">Bombsite</div>
+            <span class="text-white font-medium text-sm">{{ strat.bombsite?.name || '—' }}</span>
           </div>
           <div class="h-px bg-[#2A2A2E]" />
           <div>

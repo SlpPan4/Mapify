@@ -52,9 +52,9 @@ function handleReject() {
 
 <template>
   <div v-if="isOpen">
-    <div class="fixed inset-0 z-[100] bg-black/70 backdrop-blur-[2px]" @click="$emit('close')"></div>
+    <div class="fixed inset-x-0 top-14 bottom-0 z-[100] bg-black/70 backdrop-blur-[2px]" @click="$emit('close')"></div>
 
-    <div class="fixed right-0 top-0 h-full w-full max-w-[520px] bg-[#141416] border-l border-[#2A2A2E] z-[110] animate-slide-right flex flex-col shadow-2xl">
+    <div class="fixed right-0 top-14 bottom-0 w-full max-w-[520px] bg-[#141416] border-l border-[#2A2A2E] z-[110] animate-slide-right flex flex-col shadow-2xl">
       <div class="px-6 py-4 border-b border-[#2A2A2E] flex items-start justify-between gap-4 shrink-0">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
@@ -73,7 +73,7 @@ function handleReject() {
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
         <div class="flex items-center gap-3 flex-wrap">
           <SideBadge :side="submission.side" />
           <div class="flex items-center gap-1.5">

@@ -17,6 +17,7 @@ builder.Services.AddScoped<StratService>();     // Gets created for each request
 builder.Services.AddScoped<CategoryService>(); // same
 builder.Services.AddScoped<OperatorService>();
 builder.Services.AddScoped<MapService>();
+builder.Services.AddScoped<BombsiteService>();
 builder.Services.AddScoped<SubmissionService>();
 
 // add Cors and controllers support

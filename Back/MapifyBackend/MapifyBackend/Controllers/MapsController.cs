@@ -31,4 +31,21 @@ public class MapsController : ControllerBase
         var maps = await _mapService.GetAllMaps();
         return Ok(ApiResponse.Success(maps));
     }
+
+    /// <summary>
+    /// Returns a map by ID, including all of its bombsites.
+    /// </summary>
+    /// <param name="id">The map ID.</param>
+    /// <returns>The map data with its bombsites if found.</returns>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Map>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetById(int id)
+    {
+        Map? map = await _mapService.GetMapWithBombsites(id);
+        if (map == null)
+            return NotFound(ApiResponse.NotFound($"Map by id {id} not found"));
+
+        return Ok(ApiResponse.Success(map));
+    }
 }

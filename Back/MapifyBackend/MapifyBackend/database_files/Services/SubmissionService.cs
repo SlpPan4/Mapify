@@ -33,6 +33,16 @@ public class SubmissionService
         if (map == null)
             throw new ArgumentException($"Map by id {request.MapId} does not exist");
 
+        if (request.BombsiteId.HasValue)
+        {
+            Bombsite? bombsite = await _db.GetBombsiteById(request.BombsiteId.Value);
+            if (bombsite == null)
+                throw new ArgumentException($"Bombsite by id {request.BombsiteId.Value} does not exist");
+
+            if (bombsite.MapId != request.MapId)
+                throw new ValidationException($"Bombsite {request.BombsiteId.Value} does not belong to map {request.MapId}");
+        }
+
         List<int> categoryIds = request.CategoryIds.Distinct().ToList();
         foreach (int categoryId in categoryIds)
         {
@@ -77,7 +87,8 @@ public class SubmissionService
             request.MapId,
             request.Description,
             categoryIds,
-            operatorIds);
+            operatorIds,
+            request.BombsiteId);
 
         return await _db.AddPendingStratSubmission(submission);
     }
