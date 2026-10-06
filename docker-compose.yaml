@@ -31,7 +31,7 @@ services:
     profiles:
       - test
 
-  frontend:
+  admin-panel:
     build:
       context: ./Front/Admin-panel
       dockerfile: DOCKERFILE
@@ -67,6 +67,21 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - mapify-network
+
+  pwa:
+    build:
+      context: ./Front/Mapify-pwa
+      dockerfile:  DOCKERFILE
+    environment:
+      # The preview server proxies /api to the backend over the compose network.
+      - VITE_API_PROXY_TARGET=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "4173:4173"
     networks:
       - mapify-network
 
