@@ -55,8 +55,9 @@ function onMapChange(event: Event) {
 }
 
 function onBombsiteChange(event: Event) {
-  const value = (event.target as HTMLSelectElement).value
-  draft.setBombsite(value === '' ? null : Number(value))
+  const value = Number((event.target as HTMLSelectElement).value)
+  if (!bombsites.value.some((site) => site.id === value)) return
+  draft.setBombsite(value)
 }
 
 function onSideChange(event: Event) {
@@ -198,15 +199,15 @@ async function sendCategory() {
         </div>
 
         <div class="form-field">
-          <label for="sub-bombsite">Bombsite (optional)</label>
+          <label for="sub-bombsite">Bombsite</label>
           <select
             id="sub-bombsite"
             class="select"
+            required
             :disabled="draft.mapId === null"
             :value="draft.bombsiteId ?? ''"
             @change="onBombsiteChange"
           >
-            <option value="">No specific site</option>
             <option v-for="site in bombsites" :key="site.id" :value="site.id">
               {{ site.name }}
             </option>

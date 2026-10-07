@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useDraftStore } from '@/stores/draft'
 import { useOfflineStore } from '@/stores/offline'
 import { useReferenceStore } from '@/stores/reference'
 import { useStratsStore } from '@/stores/strats'
@@ -7,11 +8,16 @@ import { useStratsStore } from '@/stores/strats'
 const offline = useOfflineStore()
 const reference = useReferenceStore()
 const strats = useStratsStore()
+const draft = useDraftStore()
 
 onMounted(() => {
   offline.init()
+  // Restore the persisted draft, then keep persisting every change to it.
+  draft.restore()
+  draft.$subscribe(() => draft.persist())
   // Preload the library and reference data so narrowing is instant (Rule 6.2).
-  void reference.load()
+  // Once reference data is available, drop draft ids that no longer exist.
+  void reference.load().then(() => draft.pruneInvalid())
   void strats.load()
 })
 </script>

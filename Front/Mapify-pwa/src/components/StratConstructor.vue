@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useDraftStore } from '@/stores/draft'
 import { useReferenceStore } from '@/stores/reference'
 import { SIDES, type Operator, type Side } from '@/types'
@@ -10,6 +10,28 @@ const emit = defineEmits<{
 
 const draft = useDraftStore()
 const reference = useReferenceStore()
+
+// Map layouts are static frontend assets (public/maps/<mapId>.<ext>). When the
+// backend serves map images one day, this helper is the single place to change.
+function layoutUrlForMap(mapId: number, ext: 'png' | 'svg'): string {
+  return `/maps/${mapId}.${ext}`
+}
+
+// Missing layouts fall back gracefully: PNG first, SVG once, then the flat grid.
+const layoutExt = ref<'png' | 'svg' | null>('png')
+watch(
+  () => draft.mapId,
+  () => (layoutExt.value = 'png'),
+)
+const layoutUrl = computed(() =>
+  draft.mapId !== null && layoutExt.value !== null
+    ? layoutUrlForMap(draft.mapId, layoutExt.value)
+    : null,
+)
+
+function onLayoutError() {
+  layoutExt.value = layoutExt.value === 'png' ? 'svg' : null
+}
 
 // Resume the wizard at the furthest completed step.
 const step = ref(draft.mapId === null ? 1 : draft.bombsiteId === null ? 2 : 3)
@@ -196,6 +218,13 @@ function commitNote() {
         </div>
 
         <div class="sketch-canvas" @click="onCanvasClick">
+          <img
+            v-if="layoutUrl"
+            :src="layoutUrl"
+            class="sketch-layout"
+            alt=""
+            @error="onLayoutError"
+          />
           <span
             v-for="(item, index) in draft.sketch.operators"
             :key="`op-${index}`"

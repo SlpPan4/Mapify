@@ -568,6 +568,15 @@ textarea.input:focus {
   overflow: hidden;
 }
 
+.sketch-layout {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .sketch-item {
   position: absolute;
   transform: translate(-50%, -50%);
