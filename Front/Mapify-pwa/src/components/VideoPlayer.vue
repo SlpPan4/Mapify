@@ -17,6 +17,9 @@ type Embed =
 const embed = computed<Embed>(() => {
   const url = props.url.trim()
 
+  // Known platforms only embed when a usable video ID was extracted;
+  // anything else (e.g. a bare "youtube.com" placeholder) falls through
+  // to the external-link card instead of a broken iframe.
   const youtube = url.match(
     /(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/,
   )
@@ -44,6 +47,14 @@ const embed = computed<Embed>(() => {
 function withProtocol(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`
 }
+
+const host = computed(() => {
+  try {
+    return new URL(withProtocol(props.url.trim())).hostname.replace(/^www\./, '')
+  } catch {
+    return 'an external site'
+  }
+})
 </script>
 
 <template>
@@ -55,6 +66,7 @@ function withProtocol(url: string): string {
     <iframe
       :src="embed.src"
       title="Strategy video"
+      referrerpolicy="strict-origin-when-cross-origin"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen
     ></iframe>
@@ -62,9 +74,10 @@ function withProtocol(url: string): string {
   <div v-else-if="embed.kind === 'video'" class="video-wrapper">
     <video :src="embed.src" controls preload="metadata"></video>
   </div>
-  <p v-else>
-    <a :href="withProtocol(props.url)" target="_blank" rel="noopener noreferrer">
-      Watch the video demonstration externally
+  <div v-else class="video-fallback">
+    <span class="muted">Video hosted on {{ host }}</span>
+    <a :href="withProtocol(props.url)" target="_blank" rel="noopener noreferrer" class="btn">
+      Watch externally
     </a>
-  </p>
+  </div>
 </template>

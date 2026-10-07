@@ -1,16 +1,32 @@
+/* ============================================================
+   Mapify — design system v3 "Field Board"
+   Direction: a coach's tactics board. Matte graphite surface,
+   dry-erase markers in two team colors, one yellow highlighter
+   for what matters. Everything flat, squared, legible.
+   No gradients, no glow, no glass, no entrance animations.
+   ============================================================ */
+
 :root {
-  --bg: #0f1115;
-  --surface: #171a21;
-  --surface-2: #1f232d;
-  --border: #2a2f3a;
-  --text: #e6e8ee;
-  --muted: #9aa3b2;
-  --accent: #e5484d;
-  --accent-hover: #f0555a;
-  --attack: #dc2626;
-  --defense: #2563eb;
-  --success: #16a34a;
-  --radius: 8px;
+  /* Board palette — all flat, all matte */
+  --bg: #101214;
+  --surface: #15181b;
+  --surface-2: #1b1f23;
+  --border: #262b30;
+  --border-strong: #3a4148;
+  --text: #e9ebed;
+  --muted: #8b939c;
+
+  /* Marker colors */
+  --accent: #e8c547; /* the highlighter */
+  --accent-ink: #17150a; /* text written over the highlighter */
+  --attack: #d0544a; /* attack marker — matte red */
+  --defense: #4e7fb5; /* defense marker — matte blue */
+  --success: #5da57a;
+
+  --radius: 4px;
+  --radius-lg: 6px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur: 0.15s;
 }
 
 * {
@@ -30,27 +46,73 @@ body {
     'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The board's dot grid — a minimap under everything, nearly invisible */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(rgba(233, 235, 237, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 #app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 h1,
 h2,
 h3 {
   line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Numbers should line up like on a scoresheet */
+.strat-meta,
+.badge,
+.op-badge,
+.wizard-step,
+.filter-group label {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
 }
 
 a {
   color: var(--accent);
   text-decoration: none;
+  text-underline-offset: 3px;
 }
 
 a:hover {
   text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
 /* Layout */
@@ -63,8 +125,10 @@ a:hover {
 }
 
 .page-title {
-  margin: 24px 0 4px;
-  font-size: 1.6rem;
+  margin: 26px 0 4px;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
@@ -72,13 +136,14 @@ a:hover {
   color: var(--muted);
 }
 
-/* Header / navigation */
+/* Header — a strip of masking tape on the top edge of the board */
 
 .app-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--surface);
+  background: var(--bg);
+  border-top: 2px solid var(--accent);
   border-bottom: 1px solid var(--border);
 }
 
@@ -94,8 +159,9 @@ a:hover {
 }
 
 .brand {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.15rem;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
@@ -109,37 +175,49 @@ a:hover {
 
 .nav {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
   margin-left: auto;
 }
 
 .nav-link {
+  position: relative;
   color: var(--muted);
-  padding: 6px 10px;
-  border-radius: var(--radius);
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  transition: color var(--dur) var(--ease);
 }
 
 .nav-link:hover {
   color: var(--text);
   text-decoration: none;
-  background: var(--surface-2);
 }
 
+/* The marker stroke under the current section */
 .nav-link.router-link-active {
   color: var(--text);
-  background: var(--surface-2);
 }
 
-/* Offline banner */
+.nav-link.router-link-active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 3px;
+  background: var(--accent);
+}
+
+/* Offline banner — a strip of caution tape, flat */
 
 .banner-offline {
-  background: #3a2a10;
-  color: #f2c879;
+  background: var(--accent);
+  color: var(--accent-ink);
   text-align: center;
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 7px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 /* Cards, grids, tiles */
@@ -147,71 +225,89 @@ a:hover {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 16px;
 }
 
 .map-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  margin: 16px 0 24px;
+  gap: 8px;
+  margin: 14px 0 22px;
 }
 
+/* Map tiles — cells on the board */
 .map-tile {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px 8px;
+  padding: 18px 8px;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.95rem;
   color: var(--text);
   cursor: pointer;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
 }
 
 .map-tile:hover {
-  border-color: var(--accent);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
 }
 
+/* Marked: the coach filled the cell in */
 .map-tile.active {
+  background: var(--accent);
   border-color: var(--accent);
-  background: var(--surface-2);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .strat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
+/* Play slips — clipped cards on the analyst's desk */
 .strat-card {
   display: block;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 13px 15px;
   color: var(--text);
-  transition: border-color 0.15s;
+  transition: border-color var(--dur) var(--ease);
 }
 
 .strat-card:hover {
-  border-color: var(--accent);
+  border-color: var(--border-strong);
   text-decoration: none;
 }
 
+/* The title gets a marker underline on hover */
 .strat-card h3 {
   margin: 0 0 6px;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
+  font-weight: 750;
+  display: inline;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-repeat: no-repeat;
+  background-size: 0% 3px;
+  background-position: 0 100%;
+  transition: background-size var(--dur) var(--ease);
+}
+
+.strat-card:hover h3 {
+  background-size: 100% 3px;
 }
 
 .strat-card .strat-meta {
   color: var(--muted);
-  font-size: 0.85rem;
-  margin-bottom: 8px;
+  font-size: 0.84rem;
+  margin: 6px 0 8px;
 }
 
 .strat-card .tag-row {
@@ -220,14 +316,16 @@ a:hover {
   gap: 6px;
 }
 
-/* Badges and tags */
+/* Badges and tags — taped labels, squared */
 
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: #fff;
 }
 
@@ -242,13 +340,20 @@ a:hover {
 .tag {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 2px;
   font-size: 0.75rem;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--muted);
 }
 
+a:hover .tag,
+.tag:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* Operator tokens — small squares like pieces on the board */
 .op-badge {
   display: inline-flex;
   align-items: center;
@@ -256,32 +361,33 @@ a:hover {
   min-width: 26px;
   height: 26px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: 3px;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #fff;
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  color: var(--text);
   background: var(--surface-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
 }
 
 .op-badge.attack {
   border-color: var(--attack);
-  color: var(--accent-hover);
+  color: #eda49d;
 }
 
 .op-badge.defense {
   border-color: var(--defense);
-  color: #7ba7f5;
+  color: #9dc0e3;
 }
 
-/* Filter bar */
+/* Filter bar — the control strip along the bottom of the board */
 
 .filter-bar {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  margin-bottom: 20px;
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  margin-bottom: 18px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -297,9 +403,8 @@ a:hover {
 }
 
 .filter-group label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -315,6 +420,11 @@ a:hover {
   padding: 7px 14px;
   cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 600;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
 .side-toggle button:first-child {
@@ -324,6 +434,10 @@ a:hover {
 .side-toggle button:last-child {
   border-radius: 0 var(--radius) var(--radius) 0;
   border-left: none;
+}
+
+.side-toggle button:hover:not(.active-attack):not(.active-defense) {
+  color: var(--text);
 }
 
 .side-toggle button.active-attack {
@@ -343,13 +457,19 @@ a:hover {
 .input,
 .select,
 textarea.input {
-  background: var(--surface-2);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  padding: 7px 10px;
+  padding: 8px 11px;
   font-size: 0.95rem;
   width: 100%;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.input::placeholder,
+textarea.input::placeholder {
+  color: var(--muted);
 }
 
 .input:focus,
@@ -365,42 +485,82 @@ textarea.input:focus {
   cursor: not-allowed;
 }
 
+.select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 55%,
+    calc(100% - 13px) 55%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+}
+
 .btn {
   display: inline-block;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
   border-radius: var(--radius);
   padding: 8px 16px;
   font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
 }
 
 .btn:hover {
-  border-color: var(--accent);
+  border-color: var(--muted);
   text-decoration: none;
 }
 
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* The highlighted action */
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: #f2d465;
+  border-color: #f2d465;
 }
 
 .btn-ghost {
   background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover {
+  color: var(--text);
+  border-color: var(--border);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible,
+.map-tile:focus-visible,
+.chip:focus-visible,
+.side-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Forms */
@@ -412,23 +572,26 @@ textarea.input:focus {
 .form-field label {
   display: block;
   margin-bottom: 4px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
 .form-error {
-  background: #3a1414;
-  border: 1px solid var(--attack);
-  color: #f2a3a3;
+  background: rgba(208, 84, 74, 0.08);
+  border: 1px solid rgba(208, 84, 74, 0.5);
+  border-left: 3px solid var(--attack);
+  color: #e8a49d;
   border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 14px;
 }
 
 .form-success {
-  background: #0f2f1a;
-  border: 1px solid var(--success);
-  color: #8fd9a8;
+  background: rgba(93, 165, 122, 0.08);
+  border: 1px solid rgba(93, 165, 122, 0.5);
+  border-left: 3px solid var(--success);
+  color: #a3d4b6;
   border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 14px;
@@ -444,16 +607,27 @@ textarea.input:focus {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--muted);
-  border-radius: 999px;
-  padding: 4px 12px;
+  border-radius: var(--radius);
+  padding: 5px 12px;
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
-.chip.selected {
-  border-color: var(--accent);
+.chip:hover {
   color: var(--text);
-  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+/* Marked chips */
+.chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* Empty state, notices, skeletons */
@@ -462,6 +636,8 @@ textarea.input:focus {
   text-align: center;
   padding: 40px 16px;
   color: var(--muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
 }
 
 .empty-state .actions {
@@ -474,8 +650,8 @@ textarea.input:focus {
 
 .offline-notice {
   background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
   padding: 16px;
   color: var(--muted);
   text-align: center;
@@ -503,19 +679,20 @@ textarea.input:focus {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(5, 6, 7, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
   padding: 16px;
+  animation: fade-in 0.15s var(--ease);
 }
 
 .modal {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 22px;
   max-width: 360px;
   width: 100%;
   text-align: center;
@@ -529,6 +706,15 @@ textarea.input:focus {
   padding: 8px;
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Video */
 
 .video-wrapper {
@@ -536,9 +722,10 @@ textarea.input:focus {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 16px;
+  border: 1px solid var(--border);
 }
 
 .video-wrapper iframe,
@@ -550,14 +737,14 @@ textarea.input:focus {
   border: 0;
 }
 
-/* Constructor sketch */
+/* Constructor sketch — the actual board */
 
 .sketch-canvas {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
   background-color: var(--surface);
   background-image:
     linear-gradient(var(--border) 1px, transparent 1px),
@@ -587,11 +774,12 @@ textarea.input:focus {
 .sketch-note {
   position: absolute;
   transform: translate(-50%, -50%);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 2px;
   padding: 2px 8px;
   font-size: 0.75rem;
+  font-weight: 600;
   max-width: 140px;
   cursor: pointer;
   user-select: none;
@@ -610,26 +798,29 @@ textarea.input:focus {
 
 .palette button.selected {
   outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .wizard-steps {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin: 16px 0;
   flex-wrap: wrap;
 }
 
 .wizard-step {
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .wizard-step.current {
   border-color: var(--accent);
   color: var(--text);
+  box-shadow: inset 0 -3px 0 var(--accent);
 }
 
 /* Detail view */
@@ -666,4 +857,74 @@ textarea.input:focus {
     gap: 20px;
     align-items: start;
   }
+}
+
+/* Motion policy: hover transitions only. No entrance animations,
+   no scroll reveals, no pulses. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Home funnel steps */
+.step-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
+
+.step-done {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.step-hint {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Library grouping */
+.library-group {
+  margin-bottom: 28px;
+}
+
+.library-group-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.library-group-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
 }
