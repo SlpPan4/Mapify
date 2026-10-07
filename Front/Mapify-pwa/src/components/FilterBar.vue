@@ -31,6 +31,7 @@ function onSide(side: Side) {
 
 <template>
   <div class="filter-bar" :class="`filter-bar-${props.variant}`">
+    <slot name="side-heading" />
     <div class="filter-group">
       <label id="side-label">Side</label>
       <div class="side-toggle" role="group" aria-labelledby="side-label">
@@ -60,6 +61,7 @@ function onSide(side: Side) {
     </div>
 
     <template v-if="showAdvanced">
+      <slot name="advanced-heading" />
       <div class="filter-group">
         <label for="filter-bombsite">Bombsite</label>
         <select

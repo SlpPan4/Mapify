@@ -904,10 +904,10 @@ textarea.input:focus {
   font-weight: 400;
 }
 
-.step-hint {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
+/* Step headings passed into the filter bar via slots take a full row */
+.filter-bar > .step-heading {
+  flex-basis: 100%;
+  margin: 8px 0 0;
 }
 
 /* Library grouping */

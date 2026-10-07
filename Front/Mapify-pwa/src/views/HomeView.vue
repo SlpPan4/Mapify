@@ -56,15 +56,20 @@ watch(
     <h2 class="step-heading"><span class="step-number">1</span> Pick the map</h2>
     <MapGrid />
 
-    <h2 class="step-heading">
-      <span class="step-number">2</span> Pick your side
-      <span v-if="filters.side" class="step-done">· {{ filters.side }}</span>
-    </h2>
-    <FilterBar variant="match" />
-
-    <p v-if="filters.mapId !== null" class="step-hint">
-      Narrow down further above — bombsite, category, operator or name — or open a strategy below.
-    </p>
+    <FilterBar variant="match">
+      <template #side-heading>
+        <h2 class="step-heading">
+          <span class="step-number">2</span> Pick your side
+          <span v-if="filters.side" class="step-done">· {{ filters.side }}</span>
+        </h2>
+      </template>
+      <template #advanced-heading>
+        <h2 class="step-heading">
+          <span class="step-number">3</span> Pick details
+          <span class="step-done">(optional)</span>
+        </h2>
+      </template>
+    </FilterBar>
 
     <div class="detail-actions">
       <QrShare label="Share this view" />

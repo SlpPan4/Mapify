@@ -39,7 +39,14 @@ const router = createRouter({
       component: () => import('@/views/NotFoundView.vue'),
     },
   ],
-  scrollBehavior: () => ({ top: 0 }),
+  // Scroll to top only on real page changes. Query-only updates (the filter
+  // mirror on the home page) must keep the scroll position, otherwise every
+  // select change would throw the user back to the top on a phone.
+  scrollBehavior: (to, from, savedPosition) => {
+    if (savedPosition) return savedPosition
+    if (to.path === from.path) return false
+    return { top: 0 }
+  },
 })
 
 export default router
