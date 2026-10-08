@@ -928,3 +928,26 @@ textarea.input:focus {
   font-size: 0.85rem;
   font-weight: 400;
 }
+
+/* External-link fallback for unsupported video platforms */
+.video-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+/* One-time notification consent card */
+.consent-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  max-width: 360px;
+}

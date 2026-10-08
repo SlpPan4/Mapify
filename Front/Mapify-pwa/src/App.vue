@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import NotificationConsent from '@/components/NotificationConsent.vue'
 import { useDraftStore } from '@/stores/draft'
 import { useOfflineStore } from '@/stores/offline'
 import { useReferenceStore } from '@/stores/reference'
@@ -42,4 +43,6 @@ onMounted(() => {
   <main style="flex: 1">
     <RouterView />
   </main>
+
+  <NotificationConsent />
 </template>

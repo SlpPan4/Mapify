@@ -72,7 +72,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 8080,
     proxy: apiProxy,
   },
   // The Docker image serves the production build via `vite preview`.

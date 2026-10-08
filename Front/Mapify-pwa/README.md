@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-The dev server runs on `http://localhost:8080` and proxies `/api/...` to `http://localhost:5000`. Override the proxy target with the `VITE_API_PROXY_TARGET` environment variable. The service worker is enabled in dev mode, so PWA behavior can be checked without a production build.
+The dev server runs on `http://localhost:5173` and proxies `/api/...` to `http://localhost:5000`. Override the proxy target with the `VITE_API_PROXY_TARGET` environment variable. The service worker is enabled in dev mode, so PWA behavior can be checked without a production build.
 
 ## Build and preview
 

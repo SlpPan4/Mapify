@@ -28,6 +28,7 @@ onMounted(async () => {
   const hasQuery = QUERY_KEYS.some((key) => route.query[key] !== undefined)
   if (hasQuery) {
     filters.applyQuery(route.query)
+    filters.setSide(filters.side)
   } else {
     filters.restoreContext()
   }

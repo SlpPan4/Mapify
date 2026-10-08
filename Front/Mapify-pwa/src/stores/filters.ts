@@ -54,10 +54,10 @@ export const useFiltersStore = defineStore('filters', {
         if (category && category.side !== side) this.categoryId = null
         const operator = reference.operators.find((o) => o.id === this.operatorId)
         if (operator && operator.side !== side) this.operatorId = null
-      } else {
-        this.categoryId = null
-        this.operatorId = null
       }
+      // side === null means "any side": the category/operator stay valid and are
+      // offered again, so they must NOT be cleared here. Clearing them would also
+      // wipe an operator shared via ?operator= in a URL on load (Rule 4.2).
       this.persistContext()
     },
     setBombsite(bombsiteId: number | null) {
