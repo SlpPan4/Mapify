@@ -2,7 +2,7 @@
 
 *English version below — [Русская версия](#mapify--мануал-по-запуску).*
 
-Stack: ASP.NET Core (.NET 10) backend + Vue 3 (Vite) admin panel. Data lives in a SQLite file.
+Stack: ASP.NET Core (.NET 10) backend + two Vue 3 (Vite) frontends — an admin panel and a public installable PWA strategy library. Data lives in a SQLite file.
 
 ## Quick start: Docker (one command)
 
@@ -20,10 +20,11 @@ Then, from the repo root:
 docker compose up --build
 ```
 
-Three services come up:
+Four services come up:
 
 - **backend** — API at http://localhost:5000
-- **frontend** — admin panel at http://localhost:5173
+- **admin-panel** — admin panel at http://localhost:5173
+- **pwa** — public strategy library (installable PWA with offline support) at http://localhost:4173
 - **telegram-bot** — Telegram bot (starts only if `Front/Telegram/.env` contains a valid token, see below)
 
 ### Telegram bot
@@ -36,7 +37,7 @@ TELEGRAM_BOT_TOKEN=your-bot-token-here
 
 Inside compose the bot talks to the backend at `http://backend:5000/api/` automatically. Without `Front/Telegram/.env` the container exits immediately — the rest of the stack is unaffected. Running the bot locally without Docker works too: the same `.env` is picked up by `src/config.py`.
 
-The admin panel code is mounted into the container, so frontend edits are picked up on the fly (hot reload). The backend database lives in the `backend-data` docker volume and survives rebuilds.
+The admin panel code is mounted into the container, so frontend edits are picked up on the fly (hot reload). The PWA service builds the production bundle and serves it on port 4173, proxying `/api` calls to the backend over the compose network — no extra configuration needed. The backend database lives in the `backend-data` docker volume and survives rebuilds.
 
 Stop: `Ctrl+C` or `docker compose down` (add `-v` if you want to wipe the database too).
 
@@ -107,12 +108,13 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 ```text
 Back/MapifyBackend/       # ASP.NET Core API (+ integration tests)
 Front/Admin-panel/        # admin panel (working app is in the admin-panel/ subfolder)
+Front/Mapify-pwa/         # public strategy library (docker-compose service pwa, Vue 3 PWA + Playwright e2e tests)
 Front/Discord/            # Discord bot (not part of docker-compose, configured separately)
 Front/Telegram/           # Telegram bot (docker-compose service telegram-bot, needs Front/Telegram/.env)
-docker-compose.yaml       # backend + frontend + telegram-bot (+ test profile)
+docker-compose.yaml       # backend + admin-panel + pwa + telegram-bot (+ test profile)
 ```
 
-Details on each part — in the `AGENTS.md` files of the corresponding folders and in `Back/MapifyBackend/API_DOCUMENTATION.md`.
+Details on each part — in the `AGENTS.md` files of the corresponding folders, in `Back/MapifyBackend/API_DOCUMENTATION.md`, and in the per-app READMEs (`Front/Mapify-pwa/README.md`, `Front/Admin-panel/admin-panel/README.md`).
 
 ---
 
@@ -120,7 +122,7 @@ Details on each part — in the `AGENTS.md` files of the corresponding folders a
 
 *[English version](#mapify--setup-guide).*
 
-Стек: бэкенд на ASP.NET Core (.NET 10) + админ-панель на Vue 3 (Vite). Данные — в SQLite-файле.
+Стек: бэкенд на ASP.NET Core (.NET 10) + два фронта на Vue 3 (Vite) — админ-панель и публичная библиотека стратегий в виде устанавливаемого PWA. Данные — в SQLite-файле.
 
 ## Быстрый старт: Docker (одна команда)
 
@@ -138,10 +140,11 @@ ADMIN_API_KEY=мой-секретный-ключ
 docker compose up --build
 ```
 
-Поднимутся три сервиса:
+Поднимутся четыре сервиса:
 
 - **backend** — API на http://localhost:5000
-- **frontend** — админ-панель на http://localhost:5173
+- **admin-panel** — админ-панель на http://localhost:5173
+- **pwa** — публичная библиотека стратегий (устанавливаемое PWA с офлайн-доступом) на http://localhost:4173
 - **telegram-bot** — Telegram-бот (запустится, только если в `Front/Telegram/.env` задан токен, см. ниже)
 
 ### Telegram-бот
@@ -154,7 +157,7 @@ TELEGRAM_BOT_TOKEN=токен-твоего-бота
 
 Внутри compose бот автоматически ходит на бэкенд по адресу `http://backend:5000/api/`. Без `Front/Telegram/.env` контейнер сразу завершится — на остальные сервисы это не влияет. Локальный запуск без Docker тоже работает: тот же `.env` подхватывается в `src/config.py`.
 
-Код админ-панели примонтирован в контейнер, поэтому правки фронта подхватываются на лету (hot reload). База бэкенда лежит в docker-volume `backend-data` и переживает пересборку.
+Код админ-панели примонтирован в контейнер, поэтому правки фронта подхватываются на лету (hot reload). Сервис PWA собирает продакшен-бандл и отдаёт его на порту 4173, проксируя `/api` на бэкенд по внутренней сети compose — отдельная настройка не нужна. База бэкенда лежит в docker-volume `backend-data` и переживает пересборку.
 
 Остановка: `Ctrl+C` или `docker compose down` (добавь `-v`, если хочешь снести и базу).
 
@@ -225,16 +228,17 @@ curl -H "X-Api-Key: mapify-dev-admin-key" http://localhost:5000/api/submissions/
 ```text
 Back/MapifyBackend/       # ASP.NET Core API (+ интеграционные тесты)
 Front/Admin-panel/        # админ-панель (рабочее приложение — в подпапке admin-panel/)
+Front/Mapify-pwa/         # публичная библиотека стратегий (сервис pwa в docker-compose, Vue 3 PWA + e2e-тесты Playwright)
 Front/Discord/            # Discord-бот (в docker-compose не входит, настраивается отдельно)
 Front/Telegram/           # Telegram-бот (сервис telegram-bot в docker-compose, нужен Front/Telegram/.env)
-docker-compose.yaml       # backend + frontend + telegram-bot (+ профиль test)
+docker-compose.yaml       # backend + admin-panel + pwa + telegram-bot (+ профиль test)
 ```
 
-Подробности по каждой части — в `AGENTS.md` соответствующих папок и в `Back/MapifyBackend/API_DOCUMENTATION.md`.
+Подробности по каждой части — в `AGENTS.md` соответствующих папок, в `Back/MapifyBackend/API_DOCUMENTATION.md` и в README отдельных приложений (`Front/Mapify-pwa/README.md`, `Front/Admin-panel/admin-panel/README.md`).
 
 ## Authors / Авторы
 
-- **Dmytro Osipov** ([@SlpPan4](https://github.com/SlpPan4)) — backend, admin panel, DevOps / бэкенд, админ-панель, DevOps
+- **Dmytro Osipov** ([@SlpPan4](https://github.com/SlpPan4)) — backend, admin panel, public PWA, DevOps / бэкенд, админ-панель, публичное PWA, DevOps
 - Telegram & Discord bots / боты — см. [contributors](https://github.com/SlpPan4/Mapify/graphs/contributors)
 
 License / Лицензия: [MIT](LICENSE)

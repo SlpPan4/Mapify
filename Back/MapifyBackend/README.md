@@ -1,6 +1,6 @@
 # MapifyBackend
 
-ASP.NET Core Web API for the Mapify project. Stores and serves Rainbow Six Siege strategy data: maps, strats, categories, operators, and a public submission workflow with admin approval.
+ASP.NET Core Web API for the Mapify project. Stores and serves Rainbow Six Siege strategy data: maps, bombsites, strats, categories, operators, and a public submission workflow with admin approval.
 
 ## Tech Stack
 
@@ -18,13 +18,14 @@ MapifyBackend/
 ├── Program.cs                              # Entry point, DI, middleware, CORS, rate limiting
 ├── MapifyBackend.csproj                    # Project file and NuGet references
 ├── Controllers/                            # API controllers
+│   ├── AdminMapsController.cs              # Admin map + bombsite CRUD (requires the API key)
 │   ├── CategoriesController.cs
 │   ├── MapsController.cs
 │   ├── OperatorsController.cs
 │   ├── StratsController.cs
 │   └── SubmissionsController.cs
 ├── database_files/
-│   ├── DatabaseInitializer.cs              # Runs schema script on startup (single transaction)
+│   ├── DatabaseInitializer.cs              # Runs schema script on startup, seeds maps/bombsites (single transaction)
 │   ├── DatabaseService.cs                  # All Dapper/SQLite data access
 │   ├── mainschema.sql                      # Schema + seed data
 │   ├── Entities/                           # Plain domain models
@@ -43,6 +44,8 @@ MapifyBackend.IntegrationTests/
 ├── ControllerTestsBase.cs
 ├── CustomWebApplicationFactory.cs
 ├── HttpResponseMessageExtensions.cs
+├── AdminAuthTests.cs                       # API-key middleware coverage (401 / public routes)
+├── AdminMapsControllerTests.cs             # Admin map/bombsite CRUD
 ├── SubmissionsRateLimitTests.cs            # Rate-limit policy coverage (429)
 └── *ControllerTests.cs
 ```
@@ -76,12 +79,14 @@ All endpoints live under `/api`. Full request/response details are in [`API_DOCU
 ### Public read endpoints
 
 - `GET /api/strats` — list strats, optional filters: `name`, `mapId`, `categoryId`, `operatorId`
-- `GET /api/strats/{id}` — full strat details (map, categories, operators)
+- `GET /api/strats/{id}` — full strat details (map, bombsite, categories, operators)
 - `GET /api/strats/category/{id}`
 - `GET /api/strats/bymap/{id}`
 - `GET /api/strats/byoperator/{id}`
 - `GET /api/strats/maps/{id}`
 - `GET /api/strats/maps/byname/{mapName}`
+- `GET /api/maps` — list maps
+- `GET /api/maps/{id}` — map with its bombsites
 - `GET /api/categories`
 - `GET /api/categories/{id}`
 - `GET /api/operators`
@@ -99,6 +104,15 @@ All endpoints live under `/api`. Full request/response details are in [`API_DOCU
 - `DELETE /api/categories/{id}`
 - `POST /api/operators/{operatorId}/assign/{stratId}`
 - `DELETE /api/operators/{operatorId}/remove/{stratId}`
+
+### Admin maps & bombsites
+
+- `POST /api/admin/maps` → `201 Created`
+- `PUT /api/admin/maps/{id}`
+- `DELETE /api/admin/maps/{id}`
+- `POST /api/admin/maps/{mapId}/bombsites` → `201 Created`
+- `PUT /api/admin/maps/{mapId}/bombsites/{id}`
+- `DELETE /api/admin/maps/{mapId}/bombsites/{id}`
 
 ### Public submissions
 
@@ -136,8 +150,9 @@ All responses use a single envelope:
 
 ## Important Notes
 
-- **Authentication:** admin submission endpoints and all mutating requests to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header (see `Utility/Api/ApiKeyAuthMiddleware.cs`). The key comes from `AdminApi:Key` (env var `AdminApi__Key`); outside Development the app refuses to start with a missing or default key.
+- **Authentication:** admin submission endpoints, the admin map/bombsite routes under `/api/admin/maps`, and all mutating requests to `/api/strats`, `/api/categories`, `/api/operators` require the `X-Api-Key` header (see `Utility/Api/ApiKeyAuthMiddleware.cs`). The key comes from `AdminApi:Key` (env var `AdminApi__Key`); outside Development the app refuses to start with a missing or default key.
 - **Strategy submissions validate side consistency:** when submitting a strategy, all selected `categoryIds` must share the same `side`, all selected `operatorIds` must share the same `side`, and the two sides must match if both lists are provided.
+- **Bombsites:** every map is seeded with `Site A`–`Site D` and `All`; a strat can be tagged with a bombsite, which must belong to its map.
 - **Public submission endpoints are rate limited** per client IP (fixed window, default 10 requests per 60 seconds; configured via `RateLimiting:Submissions`). Over-limit requests get `429 Too Many Requests`.
 - **CORS** uses the named policy `AppCors`: origins come from `Cors:AllowedOrigins` (dev default `http://localhost:5173`); an empty list means allow-all in Development and deny-by-default in Production.
 - **Database** is file-based SQLite (`database.db`) initialized from `mainschema.sql` on every startup in a single transaction. Existing data is preserved thanks to `CREATE TABLE IF NOT EXISTS` and `INSERT OR IGNORE`; on initialization failure the app fails fast and the database file is left untouched.
