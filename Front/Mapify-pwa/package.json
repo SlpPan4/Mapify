@@ -11,8 +11,8 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "run-s \"lint:*\"",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache"
+    "lint:oxlint": "oxlint .",
+    "lint:eslint": "eslint . --cache"
   },
   "dependencies": {
     "pinia": "^4.0.3",
