@@ -6,11 +6,13 @@ on:
     paths:
       - 'Back/MapifyBackend/**'
       - 'Front/Admin-panel/**'
+      - 'Front/Mapify-pwa/**'
       - '.github/workflows/ci.yml'
   pull_request:
     paths:
       - 'Back/MapifyBackend/**'
       - 'Front/Admin-panel/**'
+      - 'Front/Mapify-pwa/**'
       - '.github/workflows/ci.yml'
 
 jobs:
@@ -55,3 +57,42 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  pwa:
+    name: PWA (lint + build + e2e)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Front/Mapify-pwa
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Front/Mapify-pwa/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: Front/Mapify-pwa/test-results
+          retention-days: 7
