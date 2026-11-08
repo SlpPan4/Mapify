@@ -123,33 +123,68 @@ VALUES ('Ash', 'Attack'),
        ('Azami', 'Defense'),
        ('Skopos', 'Defense');
 
-INSERT OR IGNORE INTO strats(name, video_url, map_id, description)
-VALUES ('Cool Ash Rush', 'youtube.com', '7', ''),
-       ('Thermite breach', 'linkedin.com', '2', 'cool description'),
-       ('Lesion 2f setup', 'instagram.com', '4', '');
-       
-       
-INSERT OR IGNORE INTO categories(name, side)
-VALUES ('Rush', 'Attack'),
-       ('Default', 'Attack'),
-       ('Fast plant', 'Attack'),
-       ('Frag grenade lineup', 'Attack'),
-       ('Power Position Hold', 'Defense'),
-       ('Deep roam', 'Defense'),
-       ('Soft roam', 'Defense'),
-       ('Anchoring', 'Defense'),
-       ('Defense', 'Defense'),
-       ('Attack', 'Attack');
-       
+-- Strats are seeded with explicit ids so INSERT OR IGNORE actually dedupes on restart
+-- (without an id, AUTOINCREMENT would insert a fresh copy on every container start).
+INSERT OR IGNORE INTO strats(id, name, video_url, map_id, description)
+VALUES (1, 'Cool Ash Rush', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 7, 'Full five-man rush through the main door: Ash leads with flashes and the plant goes down before the roamers can rotate back.'),
+       (2, 'Thermite breach', 'https://www.youtube.com/watch?v=9bZkp7q19f0', 2, 'Open the garage wall with an exothermic charge, smoke off the site and plant behind the car.'),
+       (3, 'Lesion 2f setup', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 4, 'Blanket the second floor with Gu mines to slow the push and feed the anchors a steady stream of intel.'),
+       (4, 'Nokk Silent Kitchen Push', 'https://www.youtube.com/watch?v=oavMtUWDBTM', 1, 'HEL muffles Nokk''s steps while the rest of the team baits noise on the far side — she walks straight into kitchen unnoticed.'),
+       (5, 'Buck Vertical Mayhem', 'https://www.youtube.com/watch?v=ZZ5LpwO-An4', 9, 'Buck opens the floor above site with the Skeleton Key and deletes anchors from below their feet.'),
+       (6, 'Thermite Exothermic Execute', 'https://www.youtube.com/watch?v=feA64wXhbjo', 4, 'Hard-breach the garage wall, smoke the plant spot and stick the default plant behind the car.'),
+       (7, 'Doc Stim Anchor Clinic', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 2, 'Hold the pixel angle, stim teammates through the execute and outlast the retake.'),
+       (8, 'Azami Kiba Fortress', 'https://www.youtube.com/watch?v=9bZkp7q19f0', 6, 'Kiba barriers rebuild the site mid-round: block the doorway, force the funnel, win the trade.'),
+       (9, 'Lesion Gu Mine Parade', 'https://www.youtube.com/watch?v=oavMtUWDBTM', 15, 'A carpet of Gu mines across the approach routes turns the clock into your sixth teammate.'),
+       (10, 'Skopos Double Trouble Hold', 'https://www.youtube.com/watch?v=ZZ5LpwO-An4', 12, 'Swap between shells to hold two angles at once — attackers never know which one is live.');
+
+
+INSERT OR IGNORE INTO categories(id, name, side)
+VALUES (1, 'Rush', 'Attack'),
+       (2, 'Default', 'Attack'),
+       (3, 'Fast plant', 'Attack'),
+       (4, 'Frag grenade lineup', 'Attack'),
+       (5, 'Power Position Hold', 'Defense'),
+       (6, 'Deep roam', 'Defense'),
+       (7, 'Soft roam', 'Defense'),
+       (8, 'Anchoring', 'Defense'),
+       (9, 'Defense', 'Defense'),
+       (10, 'Attack', 'Attack'),
+       (11, 'Execute', 'Attack'),
+       (12, 'Vertical Play', 'Attack'),
+       (13, 'Hard Breach', 'Attack'),
+       (14, 'Site Setup', 'Defense'),
+       (15, 'Breach Denial', 'Defense'),
+       (16, 'Info Game', 'Defense');
+
 INSERT OR IGNORE INTO strat_categories(strat_id, category_id)
 VALUES (1, 1),
        (2, 3),
-       (3, 5);
-       
+       (3, 5),
+       (4, 1),
+       (4, 11),
+       (5, 12),
+       (6, 13),
+       (6, 3),
+       (7, 8),
+       (7, 14),
+       (8, 14),
+       (8, 5),
+       (9, 6),
+       (9, 16),
+       (10, 5),
+       (10, 14);
+
 INSERT OR IGNORE INTO strat_operators(strat_id, operator_id)
 VALUES (1, 1),
        (2, 4),
-       (3, 6);
+       (3, 6),
+       (4, 2),
+       (5, 3),
+       (6, 4),
+       (7, 5),
+       (8, 7),
+       (9, 6),
+       (10, 8);
 
 -- Seed pending strat submissions for admin testing
 INSERT OR IGNORE INTO pending_strat_submissions(id, name, video_url, map_id, description)

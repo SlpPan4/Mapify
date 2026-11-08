@@ -525,3 +525,6 @@ http-client.private.env.json
 
 HANDOFF_bots.md
 PLAN_admin_api_security.md
+
+# archives
+*.zip
