@@ -109,8 +109,9 @@ test('denied notification permission never breaks the flow', async ({ page }) =>
 // PWA — the app exposes an installable manifest with its own icon set.
 test('the app exposes an installable PWA manifest', async ({ page }) => {
   await page.goto('/')
-  const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href')
-  expect(manifestHref).toBeTruthy()
+  const manifestLink = page.locator('link[rel="manifest"]')
+  await expect(manifestLink).toHaveAttribute('href', /^\//)
+  const manifestHref = await manifestLink.getAttribute('href')
   const manifest = await page.evaluate(async (href) => {
     const response = await fetch(href!)
     return response.json()
